@@ -1,0 +1,40 @@
+@namespace GameVault.Layout
+@inherits LayoutComponentBase
+
+<div class="min-h-screen bg-[#0B0F19] text-[#F8FAFC] flex flex-col antialiased selection:bg-[#8B5CF6]/30 selection:text-white">
+    <!-- Desktop Fixed Sidebar -->
+    <div class="hidden lg:block fixed inset-y-0 left-0 w-[248px] z-40">
+        <Sidebar />
+    </div>
+
+    <!-- Mobile Navigation Drawer & Backdrop -->
+    @if (IsMobileSidebarOpen)
+    {
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 lg:hidden transition-opacity"
+             @onclick="() => IsMobileSidebarOpen = false"></div>
+
+        <!-- Slide-in Drawer -->
+        <div class="fixed inset-y-0 left-0 w-[260px] max-w-[85vw] z-50 lg:hidden shadow-2xl transition-transform transform">
+            <Sidebar OnNavigate="() => IsMobileSidebarOpen = false" />
+        </div>
+    }
+
+    <!-- Main Content Area -->
+    <div class="flex-1 lg:pl-[248px] flex flex-col min-w-0">
+        <!-- Topbar -->
+        <Topbar OnToggleSidebar="() => IsMobileSidebarOpen = !IsMobileSidebarOpen" />
+
+        <!-- Page View Body -->
+        <main class="flex-1 w-full max-w-[1500px] mx-auto px-4 sm:px-6 md:px-8 py-6 sm:py-8">
+            @Body
+        </main>
+    </div>
+
+    <!-- Global Toast Container -->
+    <ToastHost />
+</div>
+
+@code {
+    private bool IsMobileSidebarOpen { get; set; }
+}

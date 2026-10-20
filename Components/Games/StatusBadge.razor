@@ -1,0 +1,42 @@
+@namespace GameVault.Components.Games
+@using GameVault.Models
+
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold tracking-wide border @GetStatusClasses() @CssClass">
+    <span class="w-1.5 h-1.5 rounded-full @GetDotClass()"></span>
+    @GetStatusText()
+</span>
+
+@code {
+    [Parameter] public GameStatus Status { get; set; }
+    [Parameter] public string CssClass { get; set; } = string.Empty;
+
+    private string GetStatusText() => Status switch
+    {
+        GameStatus.Playing => "Playing",
+        GameStatus.Completed => "Completed",
+        GameStatus.Backlog => "Backlog",
+        GameStatus.OnHold => "On Hold",
+        GameStatus.Dropped => "Dropped",
+        _ => Status.ToString()
+    };
+
+    private string GetStatusClasses() => Status switch
+    {
+        GameStatus.Playing => "bg-[#8B5CF6]/15 text-[#8B5CF6] border-[#8B5CF6]/30",
+        GameStatus.Completed => "bg-[#22C55E]/15 text-[#22C55E] border-[#22C55E]/30",
+        GameStatus.Backlog => "bg-[#94A3B8]/15 text-[#94A3B8] border-[#94A3B8]/30",
+        GameStatus.OnHold => "bg-[#F59E0B]/15 text-[#F59E0B] border-[#F59E0B]/30",
+        GameStatus.Dropped => "bg-[#EF4444]/15 text-[#EF4444] border-[#EF4444]/30",
+        _ => "bg-slate-700/20 text-slate-300 border-slate-700/40"
+    };
+
+    private string GetDotClass() => Status switch
+    {
+        GameStatus.Playing => "bg-[#8B5CF6] animate-pulse",
+        GameStatus.Completed => "bg-[#22C55E]",
+        GameStatus.Backlog => "bg-[#94A3B8]",
+        GameStatus.OnHold => "bg-[#F59E0B]",
+        GameStatus.Dropped => "bg-[#EF4444]",
+        _ => "bg-slate-400"
+    };
+}

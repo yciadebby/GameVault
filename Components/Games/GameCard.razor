@@ -1,0 +1,180 @@
+@namespace GameVault.Components.Games
+@using GameVault.Models
+@inject NavigationManager Navigation
+@inject GameVaultState State
+
+<div class="group relative flex flex-col rounded-2xl bg-[#151B2D] border border-[#273247] p-3 sm:p-4 transition-all duration-200 hover:-translate-y-1 hover:border-[#8B5CF6]/60 hover:shadow-xl hover:shadow-[#8B5CF6]/10 @CssClass">
+    <!-- Top Art Container with Floating Heart & Status -->
+    <div class="relative w-full aspect-[3/4] rounded-xl overflow-hidden mb-3.5 bg-[#101625]">
+        <GameArt Game="@Game" Variant="md" CssClass="w-full h-full transition-transform duration-300 group-hover:scale-105" />
+
+        <!-- Floating Wishlist Button -->
+        <button type="button"
+                @onclick="HandleWishlistClick"
+                @onclick:stopPropagation="true"
+                class="absolute top-2.5 right-2.5 w-9 h-9 rounded-full bg-[#101625]/80 backdrop-blur-md border border-white/10 flex items-center justify-center transition-all duration-150 hover:scale-110 active:scale-95 shadow-lg @(IsWishlisted ? "text-[#EF4444]" : "text-white/70 hover:text-white")"
+                aria-label="@(IsWishlisted ? "Remove from wishlist" : "Add to wishlist")"
+                title="@(IsWishlisted ? "Remove from wishlist" : "Add to wishlist")">
+            <AppIcon Name="heart" CssClass="w-5 h-5" Fill="@IsWishlisted" />
+        </button>
+
+        <!-- Status badge overlay if in library -->
+        @if (Entry != null)
+        {
+            <div class="absolute top-2.5 left-2.5">
+                <StatusBadge Status="@Entry.Status" />
+            </div>
+        }
+        else if (IsOwned)
+        {
+            <div class="absolute top-2.5 left-2.5">
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#8B5CF6]/80 backdrop-blur-md text-white border border-[#8B5CF6]">
+                    In Library
+                </span>
+            </div>
+        }
+    </div>
+
+    <!-- Metadata & Information -->
+    <div class="flex-1 flex flex-col justify-between">
+        <div>
+            <!-- Platforms & Year -->
+            <div class="flex items-center justify-between text-xs text-[#94A3B8] mb-1">
+                <span class="font-medium">@Game.ReleaseDate.Year</span>
+                <div class="flex items-center gap-1">
+                    @foreach (var platform in Game.Platforms.Take(3))
+                    {
+                        <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-[#1D263A] text-[#94A3B8]">
+                            @GetPlatformAbbr(platform)
+                        </span>
+                    }
+                </div>
+            </div>
+
+            <!-- Title -->
+            <h3 class="text-base font-bold font-heading text-white line-clamp-1 group-hover:text-[#8B5CF6] transition-colors" title="@Game.Title">
+                @Game.Title
+            </h3>
+
+            <!-- Rating & Primary Genre -->
+            <div class="flex items-center justify-between mt-1 mb-2">
+                <span class="text-xs text-[#94A3B8]">@Game.PrimaryGenre</span>
+                @if (ShowRating)
+                {
+                    <div class="flex items-center gap-1">
+                        <AppIcon Name="star" CssClass="w-3.5 h-3.5 text-[#F59E0B]" Fill="true" />
+                        <span class="text-xs font-bold text-white">@Game.Rating.ToString("F1")</span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Library Progress / Edit if inside library -->
+        @if (Entry != null)
+        {
+            <div class="mt-2 pt-2 border-t border-[#273247]/60">
+                <div class="flex items-center justify-between text-xs mb-1">
+                    <span class="text-[#94A3B8]">Progress</span>
+                    <span class="text-white font-semibold">@Entry.ProgressPercentage%</span>
+                </div>
+                <ProgressBar Percentage="@Entry.ProgressPercentage" Size="sm" />
+
+                @if (Entry.PersonalRating.HasValue)
+                {
+                    <div class="flex items-center justify-between mt-2 pt-1">
+                        <span class="text-[11px] text-[#94A3B8]">My Rating</span>
+                        <StarRating Rating="@Entry.PersonalRating.Value" Size="sm" />
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- Actions -->
+        <div class="flex items-center gap-2 mt-3 pt-2">
+            <button type="button"
+                    @onclick="NavigateToDetails"
+                    class="flex-1 py-2 px-3 rounded-xl bg-[#1D263A] hover:bg-[#8B5CF6] text-white text-xs font-semibold tracking-wide transition-all duration-150 text-center border border-[#273247] hover:border-[#8B5CF6] hover:shadow-md hover:shadow-[#8B5CF6]/20">
+                View Details
+            </button>
+
+            @if (Entry != null && OnEdit.HasDelegate)
+            {
+                <button type="button"
+                        @onclick="HandleEditClick"
+                        class="p-2 rounded-xl bg-[#1D263A] hover:bg-[#273247] text-[#94A3B8] hover:text-white transition-colors border border-[#273247]"
+                        title="Edit Library Entry"
+                        aria-label="Edit Library Entry">
+                    <AppIcon Name="edit" CssClass="w-4 h-4" />
+                </button>
+            }
+            else if (!IsOwned)
+            {
+                <button type="button"
+                        @onclick="HandleAddLibrary"
+                        class="p-2 rounded-xl bg-[#8B5CF6]/15 hover:bg-[#8B5CF6] text-[#8B5CF6] hover:text-white transition-colors border border-[#8B5CF6]/30"
+                        title="Add to Library"
+                        aria-label="Add to Library">
+                    <AppIcon Name="plus" CssClass="w-4 h-4" />
+                </button>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Game Game { get; set; } = null!;
+    [Parameter] public LibraryEntry? Entry { get; set; }
+    [Parameter] public bool IsWishlisted { get; set; }
+    [Parameter] public bool IsOwned { get; set; }
+    [Parameter] public bool ShowRating { get; set; } = true;
+    [Parameter] public string CssClass { get; set; } = string.Empty;
+    [Parameter] public EventCallback<Game> OnWishlistToggle { get; set; }
+    [Parameter] public EventCallback<Game> OnEdit { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        IsWishlisted = State.IsWishlisted(Game.Id);
+        IsOwned = State.IsInLibrary(Game.Id);
+    }
+
+    private void NavigateToDetails()
+    {
+        Navigation.NavigateTo($"/games/{Game.Id}");
+    }
+
+    private async Task HandleWishlistClick()
+    {
+        if (OnWishlistToggle.HasDelegate)
+        {
+            await OnWishlistToggle.InvokeAsync(Game);
+        }
+        else
+        {
+            State.ToggleWishlist(Game.Id);
+            IsWishlisted = State.IsWishlisted(Game.Id);
+        }
+    }
+
+    private async Task HandleEditClick()
+    {
+        if (OnEdit.HasDelegate)
+        {
+            await OnEdit.InvokeAsync(Game);
+        }
+    }
+
+    private void HandleAddLibrary()
+    {
+        State.AddToLibrary(Game.Id);
+        IsOwned = true;
+    }
+
+    private static string GetPlatformAbbr(string platform) => platform switch
+    {
+        "PlayStation" => "PS",
+        "Nintendo Switch" => "NSW",
+        "PC" => "PC",
+        "Xbox" => "XB",
+        _ => platform
+    };
+}

@@ -1,0 +1,32 @@
+@namespace GameVault.Components.Games
+
+<div class="w-full @CssClass">
+    @if (ShowLabel)
+    {
+        <div class="flex items-center justify-between text-xs font-medium mb-1.5">
+            <span class="text-[#94A3B8]">@Label</span>
+            <span class="text-white font-semibold">@ClampedPercentage%</span>
+        </div>
+    }
+    <div class="w-full bg-[#101625] rounded-full overflow-hidden border border-[#273247]/60 p-0.5 @GetTrackHeight()">
+        <div class="h-full rounded-full bg-gradient-to-r from-[#8B5CF6] via-[#6366F1] to-[#22D3EE] transition-all duration-300 ease-out shadow-sm"
+             style="width: @(ClampedPercentage)%;"></div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int Percentage { get; set; }
+    [Parameter] public string Label { get; set; } = "Progress";
+    [Parameter] public bool ShowLabel { get; set; } = false;
+    [Parameter] public string Size { get; set; } = "md"; // "sm", "md", "lg"
+    [Parameter] public string CssClass { get; set; } = string.Empty;
+
+    private int ClampedPercentage => Math.Clamp(Percentage, 0, 100);
+
+    private string GetTrackHeight() => Size switch
+    {
+        "sm" => "h-2",
+        "lg" => "h-3.5",
+        _ => "h-2.5"
+    };
+}

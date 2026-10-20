@@ -1,0 +1,156 @@
+@namespace GameVault.Layout
+@inject GameVaultState State
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<!-- Sidebar Container -->
+<aside class="flex flex-col h-full bg-[#101625] border-r border-[#273247] text-[#94A3B8] select-none">
+    <!-- Brand / Logo -->
+    <div class="flex items-center gap-3 px-6 py-6 border-b border-[#273247]/50">
+        <div class="w-10 h-10 rounded-xl bg-[#8B5CF6] text-white flex items-center justify-center shadow-lg shadow-[#8B5CF6]/30 flex-shrink-0">
+            <AppIcon Name="gamepad" CssClass="w-5 h-5 text-white" />
+        </div>
+        <div class="min-w-0">
+            <h1 class="text-lg font-bold font-heading text-white tracking-wider leading-none">GAMEVAULT</h1>
+            <p class="text-[11px] font-medium text-[#94A3B8] tracking-wide mt-1">Your Gaming Space</p>
+        </div>
+    </div>
+
+    <!-- Navigation Groups -->
+    <div class="flex-1 overflow-y-auto px-4 py-6 space-y-6">
+        <!-- Main Menu -->
+        <div>
+            <div class="px-3 mb-2 text-[11px] font-bold uppercase tracking-wider text-[#94A3B8]/60">
+                Main Menu
+            </div>
+            <nav class="space-y-1">
+                <NavLink href="" Match="NavLinkMatch.All" class="sidebar-link" @onclick="OnItemClicked">
+                    <AppIcon Name="home" CssClass="w-5 h-5" />
+                    <span class="flex-1">Dashboard</span>
+                </NavLink>
+
+                <NavLink href="discover" Match="NavLinkMatch.Prefix" class="sidebar-link" @onclick="OnItemClicked">
+                    <AppIcon Name="compass" CssClass="w-5 h-5" />
+                    <span class="flex-1">Discover Games</span>
+                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#1D263A] text-[#94A3B8]">
+                        @State.GetAllGames().Count
+                    </span>
+                </NavLink>
+
+                <NavLink href="library" Match="NavLinkMatch.Prefix" class="sidebar-link" @onclick="OnItemClicked">
+                    <AppIcon Name="library" CssClass="w-5 h-5" />
+                    <span class="flex-1">My Library</span>
+                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#8B5CF6]/20 text-[#8B5CF6] border border-[#8B5CF6]/30">
+                        @State.GetTotalLibraryCount()
+                    </span>
+                </NavLink>
+
+                <NavLink href="wishlist" Match="NavLinkMatch.Prefix" class="sidebar-link" @onclick="OnItemClicked">
+                    <AppIcon Name="heart" CssClass="w-5 h-5" />
+                    <span class="flex-1">Wishlist</span>
+                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                        @State.GetWishlistCount()
+                    </span>
+                </NavLink>
+            </nav>
+        </div>
+
+        <!-- Personal -->
+        <div>
+            <div class="px-3 mb-2 text-[11px] font-bold uppercase tracking-wider text-[#94A3B8]/60">
+                Personal
+            </div>
+            <nav class="space-y-1">
+                <NavLink href="profile" Match="NavLinkMatch.Prefix" class="sidebar-link" @onclick="OnItemClicked">
+                    <AppIcon Name="user" CssClass="w-5 h-5" />
+                    <span class="flex-1">Profile</span>
+                </NavLink>
+
+                <NavLink href="settings" Match="NavLinkMatch.Prefix" class="sidebar-link" @onclick="OnItemClicked">
+                    <AppIcon Name="settings" CssClass="w-5 h-5" />
+                    <span class="flex-1">Settings</span>
+                </NavLink>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Sidebar Footer / User Profile Card -->
+    <div class="p-4 border-t border-[#273247]/60 bg-[#101625]">
+        <div class="flex items-center justify-between p-2 rounded-xl bg-[#151B2D] border border-[#273247] hover:border-[#8B5CF6]/40 transition-colors">
+            <div class="flex items-center gap-3 min-w-0 cursor-pointer" @onclick="NavigateToProfile">
+                <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-[#8B5CF6] to-[#22D3EE] flex items-center justify-center font-bold text-white text-xs shadow-sm flex-shrink-0">
+                    @State.Profile.AvatarInitials
+                </div>
+                <div class="min-w-0">
+                    <p class="text-xs font-bold text-white truncate">@State.Profile.DisplayName</p>
+                    <p class="text-[11px] text-[#94A3B8] truncate">@State.Profile.GamerLabel</p>
+                </div>
+            </div>
+
+            <button type="button" @onclick="NavigateToSettings" class="p-1.5 rounded-lg text-[#94A3B8] hover:text-white hover:bg-[#1D263A] transition-colors" title="Settings" aria-label="Settings">
+                <AppIcon Name="settings" CssClass="w-4 h-4" />
+            </button>
+        </div>
+    </div>
+</aside>
+
+<style>
+    .sidebar-link {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.65rem 0.85rem;
+        border-radius: 0.75rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #94A3B8;
+        transition: all 0.15s ease-in-out;
+        position: relative;
+    }
+    .sidebar-link:hover {
+        background-color: #151B2D;
+        color: #F8FAFC;
+    }
+    .sidebar-link.active {
+        background-color: rgba(139, 92, 246, 0.12);
+        color: #8B5CF6;
+        font-weight: 600;
+        border-left: 3px solid #8B5CF6;
+    }
+</style>
+
+@code {
+    [Parameter] public EventCallback OnNavigate { get; set; }
+
+    protected override void OnInitialized()
+    {
+        State.OnChange += HandleStateChanged;
+    }
+
+    private void HandleStateChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        State.OnChange -= HandleStateChanged;
+    }
+
+    private async Task OnItemClicked()
+    {
+        if (OnNavigate.HasDelegate)
+        {
+            await OnNavigate.InvokeAsync();
+        }
+    }
+
+    private void NavigateToProfile()
+    {
+        Navigation.NavigateTo("/profile");
+        _ = OnItemClicked();
+    }
+
+    private void NavigateToSettings()
+    {
+        Navigation.NavigateTo("/settings");
+        _ = OnItemClicked();
+    }
+}

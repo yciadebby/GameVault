@@ -1,0 +1,187 @@
+@namespace GameVault.Components.Forms
+@using GameVault.Models
+@inject GameVaultState State
+
+<Modal IsOpen="@IsOpen" Title="@($"Edit {Game?.Title}")" OnClose="CloseModal" Size="md">
+    <ChildContent>
+        @if (Game != null && CurrentEntry != null)
+        {
+            <div class="space-y-5">
+                <!-- Read-only Game Info Banner -->
+                <div class="flex items-center gap-3 p-3 rounded-xl bg-[#101625] border border-[#273247]">
+                    <GameArt Game="@Game" Variant="sm" />
+                    <div>
+                        <h4 class="text-sm font-bold font-heading text-white">@Game.Title</h4>
+                        <div class="flex items-center gap-2 text-xs text-[#94A3B8] mt-0.5">
+                            <span>@Game.PrimaryGenre</span>
+                            <span>•</span>
+                            <span>Added @CurrentEntry.DateAdded.ToString("MMM d, yyyy")</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status Selector -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-[#94A3B8] mb-1.5">Game Status</label>
+                    <select @bind="EditStatus" class="w-full px-3.5 py-2.5 rounded-xl bg-[#101625] border border-[#273247] text-sm text-white focus:outline-none focus:border-[#8B5CF6]">
+                        <option value="@GameStatus.Playing">Playing (Currently Active)</option>
+                        <option value="@GameStatus.Completed">Completed (100% Finished)</option>
+                        <option value="@GameStatus.Backlog">Backlog (In Queue)</option>
+                        <option value="@GameStatus.OnHold">On Hold (Paused)</option>
+                        <option value="@GameStatus.Dropped">Dropped (Abandoned)</option>
+                    </select>
+                </div>
+
+                <!-- Completion Progress Slider -->
+                <div>
+                    <div class="flex items-center justify-between text-xs mb-1.5">
+                        <label class="font-semibold uppercase tracking-wider text-[#94A3B8]">Completion Progress</label>
+                        <span class="text-white font-bold text-sm">@EditProgress%</span>
+                    </div>
+                    <input type="range" min="0" max="100" @bind="EditProgress" @bind:event="oninput"
+                           class="w-full h-2 bg-[#101625] rounded-lg appearance-none cursor-pointer accent-[#8B5CF6]" />
+                    <div class="flex justify-between text-[10px] text-[#94A3B8] mt-1">
+                        <span>0%</span>
+                        <span>25%</span>
+                        <span>50%</span>
+                        <span>75%</span>
+                        <span>100%</span>
+                    </div>
+                </div>
+
+                <!-- Personal Rating -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-[#94A3B8] mb-1.5">Personal Rating</label>
+                    <div class="flex items-center gap-3">
+                        <StarRating Rating="@(EditRating ?? 0)" IsEditable="true" Size="lg" OnRatingChanged="SetRating" />
+                        @if (EditRating.HasValue)
+                        {
+                            <span class="text-xs font-semibold text-amber-400">@EditRating / 5 Stars</span>
+                            <button type="button" @onclick="() => EditRating = null" class="text-[11px] text-[#94A3B8] hover:text-rose-400 transition-colors ml-2 underline">
+                                Clear
+                            </button>
+                        }
+                        else
+                        {
+                            <span class="text-xs text-[#94A3B8]">Unrated</span>
+                        }
+                    </div>
+                </div>
+
+                <!-- Personal Notes -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-[#94A3B8] mb-1.5">Personal Notes & Reflections</label>
+                    <textarea rows="3"
+                              @bind="EditNotes"
+                              placeholder="Add thoughts, build notes, or achievements..."
+                              class="w-full px-3.5 py-2.5 rounded-xl bg-[#101625] border border-[#273247] text-sm text-white placeholder-[#94A3B8] focus:outline-none focus:border-[#8B5CF6] transition-colors resize-none"></textarea>
+                </div>
+            </div>
+        }
+    </ChildContent>
+
+    <FooterContent>
+        <div class="flex items-center justify-between w-full">
+            <button type="button"
+                    @onclick="() => ShowConfirmDelete = true"
+                    class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-[#EF4444] bg-[#EF4444]/10 hover:bg-[#EF4444]/20 border border-[#EF4444]/20 transition-colors">
+                <AppIcon Name="trash" CssClass="w-3.5 h-3.5" />
+                <span>Remove</span>
+            </button>
+
+            <div class="flex items-center gap-2">
+                <button type="button" @onclick="CloseModal" class="px-4 py-2 rounded-xl text-xs font-semibold bg-[#1D263A] text-[#94A3B8] hover:text-white border border-[#273247] transition-colors">
+                    Cancel
+                </button>
+                <button type="button" @onclick="SaveChanges" class="px-5 py-2 rounded-xl text-xs font-semibold bg-[#8B5CF6] hover:bg-[#7C3AED] text-white shadow-md shadow-[#8B5CF6]/30 transition-all">
+                    Save Changes
+                </button>
+            </div>
+        </div>
+    </FooterContent>
+</Modal>
+
+<ConfirmDialog IsOpen="@ShowConfirmDelete"
+               Title="Remove Game from Library"
+               Message="@($"Are you sure you want to remove \"{Game?.Title}\" from your personal library? This will delete your progress and notes.")"
+               ConfirmText="Remove Game"
+               CancelText="Keep Game"
+               IsDestructive="true"
+               OnConfirm="ConfirmRemoveGame"
+               OnCancel="() => ShowConfirmDelete = false" />
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public Game? Game { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnSaved { get; set; }
+
+    private LibraryEntry? CurrentEntry => Game != null ? State.GetLibraryEntry(Game.Id) : null;
+
+    private GameStatus EditStatus { get; set; }
+    private int EditProgress { get; set; }
+    private int? EditRating { get; set; }
+    private string EditNotes { get; set; } = string.Empty;
+    private bool ShowConfirmDelete { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (Game != null)
+        {
+            var entry = State.GetLibraryEntry(Game.Id);
+            if (entry != null)
+            {
+                EditStatus = entry.Status;
+                EditProgress = entry.ProgressPercentage;
+                EditRating = entry.PersonalRating;
+                EditNotes = entry.PersonalNotes;
+            }
+        }
+    }
+
+    private void SetRating(int rating)
+    {
+        EditRating = rating;
+    }
+
+    private async Task SaveChanges()
+    {
+        if (Game != null)
+        {
+            // If user marks as completed, optionally align progress to 100% or vice versa
+            if (EditStatus == GameStatus.Completed && EditProgress < 100)
+            {
+                EditProgress = 100;
+            }
+
+            State.UpdateLibraryEntry(Game.Id, EditStatus, EditProgress, EditRating, EditNotes);
+            if (OnSaved.HasDelegate)
+            {
+                await OnSaved.InvokeAsync();
+            }
+            await CloseModal();
+        }
+    }
+
+    private async Task ConfirmRemoveGame()
+    {
+        ShowConfirmDelete = false;
+        if (Game != null)
+        {
+            State.RemoveFromLibrary(Game.Id);
+            if (OnSaved.HasDelegate)
+            {
+                await OnSaved.InvokeAsync();
+            }
+            await CloseModal();
+        }
+    }
+
+    private async Task CloseModal()
+    {
+        if (OnClose.HasDelegate)
+        {
+            await OnClose.InvokeAsync();
+        }
+    }
+}

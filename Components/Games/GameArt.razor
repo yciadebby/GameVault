@@ -1,0 +1,187 @@
+@namespace GameVault.Components.Games
+
+<div class="game-art-container relative overflow-hidden select-none @GetContainerClasses() @CssClass">
+    <!-- Theme-specific background gradients and geometric artwork -->
+    <div class="absolute inset-0 @GetBackgroundGradient()"></div>
+
+    <!-- Abstract SVG Background Graphics -->
+    <svg class="absolute inset-0 w-full h-full pointer-events-none opacity-40 mix-blend-screen" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+        @switch (ThemeKey)
+        {
+            case "shadow-protocol":
+                <defs>
+                    <linearGradient id="sp-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#8B5CF6" stop-opacity="0.8"/>
+                        <stop offset="100%" stop-color="#22D3EE" stop-opacity="0.1"/>
+                    </linearGradient>
+                </defs>
+                <path d="M-20,20 L150,-40" stroke="url(#sp-grad)" stroke-width="6" stroke-dasharray="12,6"/>
+                <path d="M-10,120 L200,40" stroke="#8B5CF6" stroke-width="2"/>
+                <circle cx="80%" cy="25%" r="35" fill="none" stroke="#22D3EE" stroke-width="1.5" stroke-dasharray="6,4"/>
+                <polygon points="20,160 90,80 140,190" fill="#8B5CF6" fill-opacity="0.15"/>
+                break;
+
+            case "neon-horizon":
+                <defs>
+                    <linearGradient id="nh-road" x1="0%" y1="100%" x2="0%" y2="0%">
+                        <stop offset="0%" stop-color="#EC4899" stop-opacity="0.6"/>
+                        <stop offset="100%" stop-color="#22D3EE" stop-opacity="0"/>
+                    </linearGradient>
+                </defs>
+                <!-- Grid perspective -->
+                <line x1="50%" y1="40%" x2="0%" y2="100%" stroke="#22D3EE" stroke-width="2"/>
+                <line x1="50%" y1="40%" x2="25%" y2="100%" stroke="#EC4899" stroke-width="1.5"/>
+                <line x1="50%" y1="40%" x2="75%" y2="100%" stroke="#EC4899" stroke-width="1.5"/>
+                <line x1="50%" y1="40%" x2="100%" y2="100%" stroke="#22D3EE" stroke-width="2"/>
+                <circle cx="50%" cy="38%" r="28" fill="#EC4899" fill-opacity="0.4" />
+                <path d="M0,70 L200,70 M0,85 L200,85" stroke="#22D3EE" stroke-width="1" stroke-opacity="0.3"/>
+                break;
+
+            case "arcane-realms":
+                <circle cx="50%" cy="50%" r="55" fill="none" stroke="#F59E0B" stroke-width="1.5" stroke-opacity="0.6"/>
+                <circle cx="50%" cy="50%" r="42" fill="none" stroke="#8B5CF6" stroke-width="2" stroke-dasharray="8,4"/>
+                <polygon points="50,15 85,75 15,75" fill="none" stroke="#F59E0B" stroke-width="1" stroke-opacity="0.4" transform="translate(15, 20)"/>
+                <circle cx="50%" cy="50%" r="10" fill="#F59E0B" fill-opacity="0.5"/>
+                break;
+
+            case "crimson-odyssey":
+                <polygon points="0,0 120,0 60,180" fill="#EF4444" fill-opacity="0.25"/>
+                <polygon points="100,50 200,120 120,200" fill="#F97316" fill-opacity="0.2"/>
+                <line x1="0" y1="20" x2="160" y2="180" stroke="#F87171" stroke-width="3"/>
+                break;
+
+            case "stardust-valley":
+                <circle cx="20%" cy="20%" r="3" fill="#6EE7B7"/>
+                <circle cx="80%" cy="30%" r="2.5" fill="#38BDF8"/>
+                <circle cx="40%" cy="70%" r="3" fill="#FDE047"/>
+                <circle cx="65%" cy="85%" r="2" fill="#6EE7B7"/>
+                <ellipse cx="50%" cy="100%" rx="90" ry="40" fill="#065F46" fill-opacity="0.4"/>
+                <ellipse cx="80%" cy="95%" rx="60" ry="30" fill="#047857" fill-opacity="0.3"/>
+                break;
+
+            case "iron-frontier":
+                <line x1="0" y1="0" x2="200" y2="200" stroke="#F97316" stroke-width="1" stroke-dasharray="4,4"/>
+                <rect x="25%" y="25%" width="50%" height="50%" fill="none" stroke="#94A3B8" stroke-width="2"/>
+                <circle cx="50%" cy="50%" r="20" fill="none" stroke="#F97316" stroke-width="2"/>
+                <line x1="50%" y1="10%" x2="50%" y2="90%" stroke="#64748B" stroke-width="1"/>
+                <line x1="10%" y1="50%" x2="90%" y2="50%" stroke="#64748B" stroke-width="1"/>
+                break;
+
+            case "abyss-walker":
+                <circle cx="50%" cy="40%" r="45" fill="#064E3B" fill-opacity="0.3"/>
+                <circle cx="48%" cy="38%" r="6" fill="#10B981" filter="drop-shadow(0 0 8px #10B981)"/>
+                <path d="M-10,150 Q50,90 120,170 T220,130" fill="none" stroke="#047857" stroke-width="2" stroke-opacity="0.5"/>
+                break;
+
+            case "echoes-of-eternity":
+                <circle cx="50%" cy="45%" r="40" fill="none" stroke="#22D3EE" stroke-width="2"/>
+                <circle cx="50%" cy="45%" r="60" fill="none" stroke="#38BDF8" stroke-width="1.5" stroke-dasharray="10,5"/>
+                <circle cx="50%" cy="45%" r="18" fill="#F59E0B" fill-opacity="0.6"/>
+                break;
+
+            case "quantum-drift":
+                <polygon points="0,0 100,0 0,200" fill="#8B5CF6" fill-opacity="0.3"/>
+                <polygon points="100,0 100,200 0,200" fill="#06B6D4" fill-opacity="0.3"/>
+                <line x1="0" y1="200" x2="100" y2="0" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="6,4"/>
+                break;
+
+            default:
+                <circle cx="50%" cy="40%" r="50" fill="none" stroke="currentColor" stroke-width="1.5" stroke-opacity="0.3"/>
+                <polygon points="50,15 90,85 10,85" fill="none" stroke="currentColor" stroke-width="1" stroke-opacity="0.2"/>
+                break;
+        }
+    </svg>
+
+    <!-- Glowing ambient highlight center -->
+    <div class="absolute inset-0 bg-radial-at-c from-white/10 to-transparent pointer-events-none"></div>
+
+    <!-- Prominent Watermarked Initials -->
+    <div class="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
+        <span class="font-heading font-black tracking-tighter text-white/15 @GetInitialsSizeClass()">
+            @GetInitials()
+        </span>
+    </div>
+
+    <!-- Bottom Badge & Micro Details -->
+    @if (Variant != "sm")
+    {
+        <div class="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex items-end justify-between pointer-events-none">
+            @if (Game != null)
+            {
+                <span class="text-[10px] font-bold uppercase tracking-widest text-white/80 bg-white/10 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/10">
+                    @Game.PrimaryGenre
+                </span>
+                <span class="text-[11px] font-semibold text-white/60 tracking-wider">
+                    @Game.ReleaseDate.Year
+                </span>
+            }
+        </div>
+    }
+
+    <!-- Subtle decorative border glow -->
+    <div class="absolute inset-0 rounded-[inherit] border border-white/10 pointer-events-none"></div>
+</div>
+
+@code {
+    [Parameter] public Game? Game { get; set; }
+    [Parameter] public string? ArtTheme { get; set; }
+    [Parameter] public string Variant { get; set; } = "md"; // "sm", "md", "lg", "hero"
+    [Parameter] public string CssClass { get; set; } = string.Empty;
+
+    private string ThemeKey => ArtTheme ?? Game?.ArtTheme ?? Game?.Id ?? "generic";
+
+    private string GetContainerClasses() => Variant switch
+    {
+        "sm" => "w-14 h-18 rounded-lg flex-shrink-0 shadow-md",
+        "lg" => "w-full aspect-[3/4] max-w-[260px] rounded-2xl shadow-xl",
+        "hero" => "w-full h-full rounded-2xl shadow-2xl",
+        _ => "w-full aspect-[3/4] rounded-2xl shadow-md"
+    };
+
+    private string GetInitials()
+    {
+        if (Game != null && !string.IsNullOrWhiteSpace(Game.Title))
+        {
+            var parts = Game.Title.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length >= 2)
+            {
+                return $"{parts[0][0]}{parts[1][0]}".ToUpperInvariant();
+            }
+            return Game.Title.Length >= 2 ? Game.Title.Substring(0, 2).ToUpperInvariant() : Game.Title.ToUpperInvariant();
+        }
+        return "GV";
+    }
+
+    private string GetInitialsSizeClass() => Variant switch
+    {
+        "sm" => "text-xl",
+        "lg" => "text-6xl md:text-7xl",
+        "hero" => "text-7xl md:text-9xl",
+        _ => "text-5xl md:text-6xl"
+    };
+
+    private string GetBackgroundGradient() => ThemeKey switch
+    {
+        "shadow-protocol" => "bg-gradient-to-br from-[#0F172A] via-[#1E1B4B] to-[#31104B]",
+        "neon-horizon" => "bg-gradient-to-tr from-[#090D16] via-[#1E1035] to-[#042F2E]",
+        "arcane-realms" => "bg-gradient-to-br from-[#1E112A] via-[#2E1065] to-[#170E38]",
+        "crimson-odyssey" => "bg-gradient-to-tr from-[#2D0A0A] via-[#4C0519] to-[#7F1D1D]",
+        "stardust-valley" => "bg-gradient-to-b from-[#042F2E] via-[#064E3B] to-[#0F172A]",
+        "iron-frontier" => "bg-gradient-to-br from-[#1E293B] via-[#292524] to-[#451A03]",
+        "abyss-walker" => "bg-gradient-to-b from-[#020617] via-[#041F1E] to-[#064E3B]",
+        "pixel-nomad" => "bg-gradient-to-tr from-[#451A03] via-[#78350F] to-[#831843]",
+        "velocity-rush" => "bg-gradient-to-br from-[#172554] via-[#4C0519] to-[#701A75]",
+        "frostbound-legends" => "bg-gradient-to-b from-[#082F49] via-[#0C4A6E] to-[#1E293B]",
+        "orbital-zero" => "bg-gradient-to-tr from-[#020617] via-[#0F172A] to-[#1E3A8A]",
+        "ember-fall" => "bg-gradient-to-br from-[#1C1917] via-[#431407] to-[#7C2D12]",
+        "quantum-drift" => "bg-gradient-to-r from-[#2E1065] via-[#1E1B4B] to-[#083344]",
+        "terra-forge" => "bg-gradient-to-tr from-[#312E81] via-[#14532D] to-[#78350F]",
+        "midnight-archive" => "bg-gradient-to-b from-[#1C1917] via-[#292524] to-[#1E1B4B]",
+        "solar-rebellion" => "bg-gradient-to-tr from-[#3B0764] via-[#701A75] to-[#7C2D12]",
+        "cloudbound" => "bg-gradient-to-br from-[#0C4A6E] via-[#0369A1] to-[#38BDF8]",
+        "echoes-of-eternity" => "bg-gradient-to-tr from-[#083344] via-[#164E63] to-[#1E1B4B]",
+        "cyber-dominion" => "bg-gradient-to-br from-[#0F172A] via-[#064E3B] to-[#1E1B4B]",
+        "phantom-circuit" => "bg-gradient-to-tr from-[#022C22] via-[#064E3B] to-[#083344]",
+        _ => "bg-gradient-to-br from-[#151B2D] via-[#1E2640] to-[#0B0F19]"
+    };
+}

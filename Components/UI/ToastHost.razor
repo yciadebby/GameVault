@@ -1,0 +1,54 @@
+@namespace GameVault.Components.UI
+@inject ToastService ToastService
+@implements IDisposable
+
+<div class="fixed top-5 right-5 z-[9999] flex flex-col gap-3 pointer-events-none max-w-sm w-full px-4 sm:px-0">
+    @foreach (var toast in ToastService.Toasts)
+    {
+        <div @key="toast.Id" class="pointer-events-auto flex items-start gap-3 p-4 rounded-xl border shadow-2xl backdrop-blur-md transition-all duration-200 @GetToastClasses(toast.Level) animate-[slideDown_0.2s_ease-out]">
+            <div class="mt-0.5 flex-shrink-0">
+                <AppIcon Name="@GetIconName(toast.Level)" CssClass="w-5 h-5" />
+            </div>
+            <div class="flex-1 min-w-0">
+                <h4 class="text-sm font-semibold text-white tracking-tight">@toast.Title</h4>
+                <p class="text-xs text-[#94A3B8] mt-0.5 leading-relaxed">@toast.Message</p>
+            </div>
+            <button type="button" @onclick="() => ToastService.RemoveToast(toast.Id)" class="text-[#94A3B8] hover:text-white transition-colors" aria-label="Dismiss toast">
+                <AppIcon Name="close" CssClass="w-4 h-4" />
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        ToastService.OnChange += HandleToastChange;
+    }
+
+    private void HandleToastChange()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        ToastService.OnChange -= HandleToastChange;
+    }
+
+    private string GetToastClasses(ToastLevel level) => level switch
+    {
+        ToastLevel.Success => "bg-[#151B2D]/95 border-[#22C55E]/40 text-[#22C55E]",
+        ToastLevel.Error => "bg-[#151B2D]/95 border-[#EF4444]/40 text-[#EF4444]",
+        ToastLevel.Warning => "bg-[#151B2D]/95 border-[#F59E0B]/40 text-[#F59E0B]",
+        _ => "bg-[#151B2D]/95 border-[#8B5CF6]/40 text-[#8B5CF6]"
+    };
+
+    private string GetIconName(ToastLevel level) => level switch
+    {
+        ToastLevel.Success => "check",
+        ToastLevel.Error => "close",
+        ToastLevel.Warning => "bell",
+        _ => "sparkles"
+    };
+}

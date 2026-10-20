@@ -1,0 +1,341 @@
+@page "/games/{id}"
+@namespace GameVault.Pages
+@using GameVault.Models
+@inject GameVaultState State
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<PageTitle>@(CurrentGame != null ? $"{CurrentGame.Title} — GameVault" : "Game Not Found — GameVault")</PageTitle>
+
+@if (CurrentGame == null)
+{
+    <!-- Invalid Game ID Friendly State -->
+    <div class="py-12">
+        <EmptyState IconName="compass"
+                    Title="Game Not Found"
+                    Description="The game you are searching for does not exist in the GameVault catalog."
+                    ActionText="Return to Discover"
+                    ActionIcon="compass"
+                    OnAction='() => Navigation.NavigateTo("/discover")' />
+    </div>
+}
+else
+{
+    var isWishlisted = State.IsWishlisted(CurrentGame.Id);
+    var libraryEntry = State.GetLibraryEntry(CurrentGame.Id);
+    var isOwned = libraryEntry != null;
+
+    <!-- Top Back Navigation -->
+    <div class="mb-5">
+        <button type="button"
+                @onclick="GoBack"
+                class="inline-flex items-center gap-2 text-xs font-semibold text-[#94A3B8] hover:text-white transition-colors bg-[#151B2D] px-3.5 py-2 rounded-xl border border-[#273247]">
+            <AppIcon Name="arrow-left" CssClass="w-4 h-4" />
+            <span>Back to Games</span>
+        </button>
+    </div>
+
+    <!-- Cinematic Hero Banner -->
+    <div class="relative w-full rounded-3xl overflow-hidden border border-[#273247] shadow-2xl p-6 sm:p-8 md:p-10 mb-8 bg-[#151B2D]">
+        <!-- Background stylized art overlay -->
+        <div class="absolute inset-0 opacity-20 pointer-events-none">
+            <GameArt Game="@CurrentGame" Variant="hero" CssClass="w-full h-full object-cover" />
+        </div>
+        <div class="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-[#0B0F19] via-[#0B0F19]/90 to-transparent pointer-events-none"></div>
+
+        <div class="relative z-10 max-w-3xl">
+            <!-- Badges -->
+            <div class="flex flex-wrap items-center gap-2 mb-3">
+                <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[#8B5CF6]/20 text-[#8B5CF6] border border-[#8B5CF6]/30 backdrop-blur-md">
+                    @CurrentGame.PrimaryGenre
+                </span>
+                <span class="px-2.5 py-1 rounded-full text-xs font-semibold text-[#94A3B8] bg-[#1D263A] border border-[#273247]">
+                    Released @CurrentGame.ReleaseDate.ToString("yyyy")
+                </span>
+                <div class="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20">
+                    <AppIcon Name="star" CssClass="w-3.5 h-3.5" Fill="true" />
+                    <span>@CurrentGame.Rating.ToString("F1") Community Rating</span>
+                </div>
+            </div>
+
+            <h1 class="text-3xl sm:text-4xl md:text-5xl font-black font-heading text-white tracking-tight">
+                @CurrentGame.Title
+            </h1>
+
+            <p class="text-sm md:text-lg text-[#94A3B8] mt-2.5 leading-relaxed font-medium">
+                @CurrentGame.ShortDescription
+            </p>
+
+            <!-- Platforms -->
+            <div class="flex items-center gap-2 mt-4 mb-6">
+                <span class="text-xs text-[#94A3B8]">Supported Platforms:</span>
+                @foreach (var platform in CurrentGame.Platforms)
+                {
+                    <span class="px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-[#1D263A] text-white border border-[#273247]">
+                        @platform
+                    </span>
+                }
+            </div>
+
+            <!-- Action Controls -->
+            <div class="flex flex-wrap items-center gap-3">
+                @if (isOwned)
+                {
+                    <button type="button"
+                            @onclick="OpenEditModal"
+                            class="px-6 py-3 rounded-xl bg-[#22C55E]/15 hover:bg-[#22C55E]/25 text-[#22C55E] border border-[#22C55E]/30 font-semibold text-sm transition-all flex items-center gap-2">
+                        <AppIcon Name="check" CssClass="w-4 h-4" />
+                        <span>In Library (@libraryEntry!.Status)</span>
+                    </button>
+                }
+                else
+                {
+                    <button type="button"
+                            @onclick="() => State.AddToLibrary(CurrentGame.Id)"
+                            class="px-6 py-3 rounded-xl bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-semibold text-sm shadow-lg shadow-[#8B5CF6]/30 transition-all flex items-center gap-2">
+                        <AppIcon Name="plus" CssClass="w-4 h-4" />
+                        <span>Add to Library</span>
+                    </button>
+                }
+
+                <button type="button"
+                        @onclick="() => State.ToggleWishlist(CurrentGame.Id)"
+                        class="px-5 py-3 rounded-xl border border-[#273247] bg-[#1D263A]/90 hover:bg-[#273247] text-white font-semibold text-sm transition-all flex items-center gap-2">
+                    <AppIcon Name="heart" CssClass="@($"w-4 h-4 {(isWishlisted ? "text-[#EF4444]" : "text-[#94A3B8]")}")" Fill="@isWishlisted" />
+                    <span>@(isWishlisted ? "Wishlisted" : "Add to Wishlist")</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content: Two Columns -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-12">
+        <!-- Left Column (65% / 8 cols) -->
+        <div class="lg:col-span-8 space-y-8">
+            <!-- About Section -->
+            <div class="p-6 md:p-8 rounded-2xl bg-[#151B2D] border border-[#273247]">
+                <h3 class="text-xl font-bold font-heading text-white mb-4 flex items-center gap-2">
+                    <AppIcon Name="compass" CssClass="w-5 h-5 text-[#8B5CF6]" />
+                    <span>About This Game</span>
+                </h3>
+                <div class="text-sm md:text-base text-[#94A3B8] leading-relaxed space-y-4">
+                    <p>@CurrentGame.Description</p>
+                    <p>Engineered for high immersion and responsive gameplay loops, @CurrentGame.Title delivers top-tier craftsmanship across modern gaming hardware with custom tailored audiovisual aesthetics.</p>
+                </div>
+            </div>
+
+            <!-- Key Features -->
+            <div class="p-6 md:p-8 rounded-2xl bg-[#151B2D] border border-[#273247]">
+                <h3 class="text-xl font-bold font-heading text-white mb-5 flex items-center gap-2">
+                    <AppIcon Name="sparkles" CssClass="w-5 h-5 text-[#8B5CF6]" />
+                    <span>Key Features</span>
+                </h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    @foreach (var feature in CurrentGame.Features)
+                    {
+                        <div class="flex items-start gap-3 p-3.5 rounded-xl bg-[#101625] border border-[#273247]/60">
+                            <div class="w-8 h-8 rounded-lg bg-[#8B5CF6]/15 text-[#8B5CF6] flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <AppIcon Name="check" CssClass="w-4 h-4" />
+                            </div>
+                            <span class="text-sm font-semibold text-white leading-snug">@feature</span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Game Highlights Visual Tiles -->
+            <div class="p-6 md:p-8 rounded-2xl bg-[#151B2D] border border-[#273247]">
+                <h3 class="text-xl font-bold font-heading text-white mb-5 flex items-center gap-2">
+                    <AppIcon Name="eye" CssClass="w-5 h-5 text-[#22D3EE]" />
+                    <span>Visual Highlights & Aesthetics</span>
+                </h3>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="relative aspect-video rounded-xl overflow-hidden bg-gradient-to-tr from-[#1E112A] to-[#8B5CF6]/40 border border-[#273247] p-4 flex flex-col justify-end">
+                        <span class="text-[10px] font-bold tracking-widest text-[#22D3EE] uppercase">ATMOSPHERE</span>
+                        <h4 class="text-sm font-bold text-white">Dynamic World Shaders</h4>
+                    </div>
+                    <div class="relative aspect-video rounded-xl overflow-hidden bg-gradient-to-br from-[#0F172A] to-[#22D3EE]/30 border border-[#273247] p-4 flex flex-col justify-end">
+                        <span class="text-[10px] font-bold tracking-widest text-amber-400 uppercase">LIGHTING</span>
+                        <h4 class="text-sm font-bold text-white">Volumetric Radiance</h4>
+                    </div>
+                    <div class="relative aspect-video rounded-xl overflow-hidden bg-gradient-to-tr from-[#1C1917] to-[#EC4899]/30 border border-[#273247] p-4 flex flex-col justify-end">
+                        <span class="text-[10px] font-bold tracking-widest text-emerald-400 uppercase">ENGINE</span>
+                        <h4 class="text-sm font-bold text-white">Zero-Latency Physics</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column (35% / 4 cols) -->
+        <div class="lg:col-span-4 space-y-6">
+            <!-- Game Information Card -->
+            <div class="p-6 rounded-2xl bg-[#151B2D] border border-[#273247]">
+                <h3 class="text-lg font-bold font-heading text-white mb-4 pb-3 border-b border-[#273247]">
+                    Game Information
+                </h3>
+                <dl class="space-y-3.5 text-xs">
+                    <div class="flex items-center justify-between">
+                        <dt class="text-[#94A3B8] font-medium">Developer</dt>
+                        <dd class="text-white font-semibold">@CurrentGame.Developer</dd>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <dt class="text-[#94A3B8] font-medium">Publisher</dt>
+                        <dd class="text-white font-semibold">@CurrentGame.Publisher</dd>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <dt class="text-[#94A3B8] font-medium">Release Date</dt>
+                        <dd class="text-white font-semibold">@CurrentGame.ReleaseDate.ToString("MMMM d, yyyy")</dd>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <dt class="text-[#94A3B8] font-medium">Community Rating</dt>
+                        <dd class="flex items-center gap-1 font-bold text-amber-400">
+                            <AppIcon Name="star" CssClass="w-3.5 h-3.5" Fill="true" />
+                            <span>@CurrentGame.Rating.ToString("F1") / 5.0</span>
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-[#94A3B8] font-medium mb-1.5">Genres</dt>
+                        <dd>
+                            <GenreChips Genres="@CurrentGame.Genres" />
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+
+            <!-- Gaming Progress Card -->
+            <div class="p-6 rounded-2xl bg-[#151B2D] border border-[#273247]">
+                <h3 class="text-lg font-bold font-heading text-white mb-4 pb-3 border-b border-[#273247]">
+                    My Gaming Progress
+                </h3>
+                @if (isOwned && libraryEntry != null)
+                {
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-[#94A3B8]">Current Status</span>
+                            <StatusBadge Status="@libraryEntry.Status" />
+                        </div>
+
+                        <div>
+                            <div class="flex items-center justify-between text-xs mb-1.5">
+                                <span class="text-[#94A3B8]">Completion</span>
+                                <span class="text-white font-bold">@libraryEntry.ProgressPercentage%</span>
+                            </div>
+                            <ProgressBar Percentage="@libraryEntry.ProgressPercentage" Size="lg" />
+                        </div>
+
+                        <div class="flex items-center justify-between pt-2">
+                            <span class="text-xs text-[#94A3B8]">My Personal Rating</span>
+                            @if (libraryEntry.PersonalRating.HasValue)
+                            {
+                                <StarRating Rating="@libraryEntry.PersonalRating.Value" Size="md" />
+                            }
+                            else
+                            {
+                                <span class="text-xs text-[#94A3B8]">Not rated yet</span>
+                            }
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(libraryEntry.PersonalNotes))
+                        {
+                            <div class="p-3 rounded-xl bg-[#101625] border border-[#273247]/60 text-xs text-[#94A3B8] italic">
+                                "@libraryEntry.PersonalNotes"
+                            </div>
+                        }
+
+                        <button type="button"
+                                @onclick="OpenEditModal"
+                                class="w-full py-2.5 rounded-xl bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-xs font-semibold shadow-md shadow-[#8B5CF6]/20 transition-all flex items-center justify-center gap-2">
+                            <AppIcon Name="edit" CssClass="w-4 h-4" />
+                            <span>Edit Progress</span>
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4">
+                        <div class="w-10 h-10 rounded-xl bg-[#1D263A] text-[#94A3B8] flex items-center justify-center mx-auto mb-2">
+                            <AppIcon Name="library" CssClass="w-5 h-5" />
+                        </div>
+                        <p class="text-xs text-[#94A3B8] mb-4">This game is not in your personal library yet.</p>
+                        <button type="button"
+                                @onclick="() => State.AddToLibrary(CurrentGame.Id)"
+                                class="w-full py-2.5 rounded-xl bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-xs font-semibold transition-all">
+                            Add to Library Now
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Related Games Section -->
+    <section class="mt-12 pt-8 border-t border-[#273247]">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h3 class="text-xl md:text-2xl font-bold font-heading text-white">Related Games</h3>
+                <p class="text-xs text-[#94A3B8]">Other adventures you might enjoy based on genre and rating.</p>
+            </div>
+            <button type="button" @onclick='() => Navigation.NavigateTo("/discover")' class="text-xs font-semibold text-[#8B5CF6] hover:underline flex items-center gap-1">
+                <span>View Catalog</span>
+                <AppIcon Name="arrow-right" CssClass="w-3.5 h-3.5" />
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            @foreach (var related in RelatedGames)
+            {
+                <GameCard @key="related.Id" Game="@related" />
+            }
+        </div>
+    </section>
+
+    <!-- Edit Game Modal -->
+    <EditGameModal IsOpen="@IsEditModalOpen"
+                   Game="@CurrentGame"
+                   OnClose="() => IsEditModalOpen = false"
+                   OnSaved="() => { IsEditModalOpen = false; StateHasChanged(); }" />
+}
+
+@code {
+    [Parameter] public string? Id { get; set; }
+
+    private Game? CurrentGame => State.GetGameById(Id);
+    private bool IsEditModalOpen { get; set; }
+
+    private List<Game> RelatedGames
+    {
+        get
+        {
+            if (CurrentGame == null) return new();
+
+            return State.GetAllGames()
+                .Where(g => g.Id != CurrentGame.Id)
+                .OrderByDescending(g => g.Genres.Any(genre => CurrentGame.Genres.Contains(genre)))
+                .ThenByDescending(g => Math.Abs(g.Rating - CurrentGame.Rating))
+                .Take(4)
+                .ToList();
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        State.OnChange += HandleStateChanged;
+    }
+
+    private void HandleStateChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        State.OnChange -= HandleStateChanged;
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/discover");
+    }
+
+    private void OpenEditModal()
+    {
+        IsEditModalOpen = true;
+    }
+}

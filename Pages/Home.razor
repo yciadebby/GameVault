@@ -1,0 +1,237 @@
+@page "/"
+@namespace GameVault.Pages
+@inject GameVaultState State
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<PageTitle>GameVault — Dashboard</PageTitle>
+
+<!-- Section A: Welcome Header -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+    <div>
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-[#8B5CF6]/15 text-[#8B5CF6] border border-[#8B5CF6]/30 mb-2.5">
+            <AppIcon Name="sparkles" CssClass="w-3.5 h-3.5" />
+            <span>COMMAND CENTER</span>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-extrabold font-heading text-white tracking-tight">
+            Welcome back, <span class="bg-gradient-to-r from-[#8B5CF6] to-[#22D3EE] bg-clip-text text-transparent">@State.Profile.DisplayName</span>!
+        </h1>
+        <p class="text-sm md:text-base text-[#94A3B8] mt-1.5">
+            Your next great adventure is just a click away.
+        </p>
+    </div>
+
+    <div class="flex items-center gap-3">
+        <button type="button" @onclick='() => Navigation.NavigateTo("/discover")' class="px-4 py-2.5 rounded-xl bg-[#151B2D] hover:bg-[#1D263A] text-white text-xs font-semibold border border-[#273247] hover:border-[#8B5CF6]/40 transition-all flex items-center gap-2">
+            <AppIcon Name="compass" CssClass="w-4 h-4 text-[#8B5CF6]" />
+            <span>Explore Catalog</span>
+        </button>
+        <button type="button" @onclick='() => Navigation.NavigateTo("/library")' class="px-5 py-2.5 rounded-xl bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-xs font-semibold shadow-lg shadow-[#8B5CF6]/25 transition-all flex items-center gap-2">
+            <AppIcon Name="library" CssClass="w-4 h-4 text-white" />
+            <span>My Library</span>
+        </button>
+    </div>
+</div>
+
+<!-- Section B: Featured Game Banner -->
+@{
+    var featured = State.GetFeaturedGame();
+}
+<FeaturedGame Game="@featured" />
+
+<!-- Section C: Library Statistics Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-10">
+    <StatCard Title="Total Games"
+              Value="@State.GetTotalLibraryCount().ToString()"
+              IconName="library"
+              Accent="violet"
+              Subtitle="Collected in vault" />
+
+    <StatCard Title="Currently Playing"
+              Value="@State.GetPlayingCount().ToString()"
+              IconName="controller"
+              Accent="cyan"
+              Subtitle="Active adventures" />
+
+    <StatCard Title="Completed Games"
+              Value="@State.GetCompletedCount().ToString()"
+              IconName="trophy"
+              Accent="green"
+              Subtitle="100% conquered" />
+
+    <StatCard Title="Wishlist Games"
+              Value="@State.GetWishlistCount().ToString()"
+              IconName="heart"
+              Accent="amber"
+              Subtitle="Saved for later" />
+</div>
+
+<!-- Section D: Continue Playing -->
+<section class="mb-10">
+    <div class="flex items-center justify-between mb-5">
+        <div>
+            <h2 class="text-xl md:text-2xl font-bold font-heading text-white tracking-tight">Continue Playing</h2>
+            <p class="text-xs sm:text-sm text-[#94A3B8]">Pick up where you left off in your ongoing journeys.</p>
+        </div>
+        <button type="button" @onclick='() => Navigation.NavigateTo("/library")' class="text-xs font-semibold text-[#8B5CF6] hover:text-[#7C3AED] transition-colors flex items-center gap-1">
+            <span>View All</span>
+            <AppIcon Name="arrow-right" CssClass="w-3.5 h-3.5" />
+        </button>
+    </div>
+
+    @{
+        var playingGames = State.GetCurrentlyPlaying().Take(3).ToList();
+    }
+    @if (playingGames.Count > 0)
+    {
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            @foreach (var (game, entry) in playingGames)
+            {
+                <div @key="game.Id" class="group rounded-2xl bg-[#151B2D] border border-[#273247] p-4 transition-all duration-200 hover:-translate-y-1 hover:border-[#8B5CF6]/60 hover:shadow-xl hover:shadow-[#8B5CF6]/10 flex flex-col justify-between">
+                    <div class="flex items-start gap-4 mb-4">
+                        <div class="cursor-pointer flex-shrink-0" @onclick='() => Navigation.NavigateTo($"/games/{game.Id}")'>
+                            <GameArt Game="@game" Variant="sm" CssClass="w-16 h-20 rounded-xl" />
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#8B5CF6]/15 text-[#8B5CF6] border border-[#8B5CF6]/30">
+                                @game.PrimaryGenre
+                            </span>
+                            <h3 class="text-base font-bold font-heading text-white truncate mt-1 group-hover:text-[#8B5CF6] transition-colors cursor-pointer" @onclick='() => Navigation.NavigateTo($"/games/{game.Id}")'>
+                                @game.Title
+                            </h3>
+                            <p class="text-xs text-[#94A3B8] line-clamp-1 mt-0.5">
+                                @(string.IsNullOrWhiteSpace(entry.PersonalNotes) ? "Active playthrough" : entry.PersonalNotes)
+                            </p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex items-center justify-between text-xs mb-1.5">
+                            <span class="text-[#94A3B8]">Progress</span>
+                            <span class="text-white font-semibold">@entry.ProgressPercentage%</span>
+                        </div>
+                        <ProgressBar Percentage="@entry.ProgressPercentage" Size="md" />
+
+                        <div class="mt-4 pt-3 border-t border-[#273247]/60 flex items-center justify-between">
+                            <span class="text-[11px] text-[#94A3B8]">Last active @entry.LastUpdated.ToString("MMM d")</span>
+                            <button type="button"
+                                    @onclick='() => Navigation.NavigateTo($"/games/{game.Id}")'
+                                    class="px-3.5 py-1.5 rounded-lg bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-sm">
+                                <span>View Game</span>
+                                <AppIcon Name="arrow-right" CssClass="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <EmptyState IconName="controller"
+                    Title="No games currently playing"
+                    Description="Start playing a game from your library to track your ongoing progress here."
+                    ActionText="Browse Library"
+                    ActionIcon="library"
+                    OnAction='() => Navigation.NavigateTo("/library")' />
+    }
+</section>
+
+<!-- Section E: Recommended For You -->
+<section class="mb-10">
+    <div class="flex items-center justify-between mb-5">
+        <div>
+            <h2 class="text-xl md:text-2xl font-bold font-heading text-white tracking-tight">Recommended For You</h2>
+            <p class="text-xs sm:text-sm text-[#94A3B8]">Curated based on your love for @State.Profile.FavoriteGenre and top ratings.</p>
+        </div>
+        <button type="button" @onclick='() => Navigation.NavigateTo("/discover")' class="text-xs font-semibold text-[#8B5CF6] hover:text-[#7C3AED] transition-colors flex items-center gap-1">
+            <span>Explore All</span>
+            <AppIcon Name="arrow-right" CssClass="w-3.5 h-3.5" />
+        </button>
+    </div>
+
+    @{
+        var recs = State.GetRecommendations(4);
+    }
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        @foreach (var game in recs)
+        {
+            <GameCard @key="game.Id" Game="@game" />
+        }
+    </div>
+</section>
+
+<!-- Section F: Recently Added -->
+<section class="mb-6">
+    <div class="flex items-center justify-between mb-5">
+        <div>
+            <h2 class="text-xl md:text-2xl font-bold font-heading text-white tracking-tight">Recently Added to Library</h2>
+            <p class="text-xs sm:text-sm text-[#94A3B8]">Latest additions to your personal game vault.</p>
+        </div>
+        <button type="button" @onclick='() => Navigation.NavigateTo("/library")' class="text-xs font-semibold text-[#8B5CF6] hover:text-[#7C3AED] transition-colors flex items-center gap-1">
+            <span>View Library</span>
+            <AppIcon Name="arrow-right" CssClass="w-3.5 h-3.5" />
+        </button>
+    </div>
+
+    @{
+        var recent = State.GetRecentlyAdded(4);
+    }
+    @if (recent.Count > 0)
+    {
+        <div class="space-y-3">
+            @foreach (var (game, entry) in recent)
+            {
+                <GameRow @key="game.Id" Game="@game" Entry="@entry" OnEdit="OpenEditModal" />
+            }
+        </div>
+    }
+    else
+    {
+        <EmptyState IconName="library"
+                    Title="Your library is empty"
+                    Description="Discover and add your favorite games to build your personal collection."
+                    ActionText="Explore Games"
+                    ActionIcon="compass"
+                    OnAction='() => Navigation.NavigateTo("/discover")' />
+    }
+</section>
+
+<!-- Edit Game Modal -->
+@if (SelectedEditGame != null)
+{
+    <EditGameModal IsOpen="@IsEditModalOpen"
+                   Game="@SelectedEditGame"
+                   OnClose="() => IsEditModalOpen = false"
+                   OnSaved="HandleEditSaved" />
+}
+
+@code {
+    private bool IsEditModalOpen { get; set; }
+    private Game? SelectedEditGame { get; set; }
+
+    protected override void OnInitialized()
+    {
+        State.OnChange += HandleStateChanged;
+    }
+
+    private void HandleStateChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        State.OnChange -= HandleStateChanged;
+    }
+
+    private void OpenEditModal(Game game)
+    {
+        SelectedEditGame = game;
+        IsEditModalOpen = true;
+    }
+
+    private void HandleEditSaved()
+    {
+        IsEditModalOpen = false;
+        SelectedEditGame = null;
+        StateHasChanged();
+    }
+}

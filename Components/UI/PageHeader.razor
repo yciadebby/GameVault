@@ -1,0 +1,31 @@
+@namespace GameVault.Components.UI
+
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+    <div>
+        @if (!string.IsNullOrWhiteSpace(Badge))
+        {
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-[#8B5CF6]/15 text-[#8B5CF6] border border-[#8B5CF6]/30 mb-2">
+                @Badge
+            </div>
+        }
+        <h1 class="text-2xl md:text-3xl font-bold font-heading text-white tracking-tight">@Title</h1>
+        @if (!string.IsNullOrWhiteSpace(Subtitle))
+        {
+            <p class="text-sm md:text-base text-[#94A3B8] mt-1">@Subtitle</p>
+        }
+    </div>
+
+    @if (Actions != null)
+    {
+        <div class="flex items-center gap-3">
+            @Actions
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = string.Empty;
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public string? Badge { get; set; }
+    [Parameter] public RenderFragment? Actions { get; set; }
+}

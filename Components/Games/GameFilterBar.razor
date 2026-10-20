@@ -1,0 +1,180 @@
+@namespace GameVault.Components.Games
+
+<div class="flex flex-col gap-4 p-4 rounded-2xl bg-[#151B2D] border border-[#273247] shadow-sm mb-6">
+    <!-- Top Row: Search and View Mode -->
+    <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+        <!-- Search input -->
+        <div class="relative flex-1">
+            <AppIcon Name="search" CssClass="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94A3B8]" />
+            <input type="text"
+                   value="@SearchQuery"
+                   @oninput="HandleSearchInput"
+                   placeholder="@SearchPlaceholder"
+                   class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#101625] border border-[#273247] text-sm text-white placeholder-[#94A3B8] focus:outline-none focus:border-[#8B5CF6] focus:ring-1 focus:ring-[#8B5CF6] transition-all" />
+            @if (!string.IsNullOrWhiteSpace(SearchQuery))
+            {
+                <button type="button" @onclick="ClearSearch" class="absolute right-3 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-white">
+                    <AppIcon Name="close" CssClass="w-4 h-4" />
+                </button>
+            }
+        </div>
+
+        <!-- View Mode Toggle & Reset -->
+        <div class="flex items-center gap-2 justify-end">
+            @if (ShowViewToggle)
+            {
+                <div class="flex items-center bg-[#101625] border border-[#273247] rounded-xl p-1">
+                    <button type="button"
+                            @onclick="() => SetViewMode(false)"
+                            class="p-1.5 rounded-lg transition-colors @(!IsListView ? "bg-[#8B5CF6] text-white shadow-sm" : "text-[#94A3B8] hover:text-white")"
+                            title="Grid View"
+                            aria-label="Grid View">
+                        <AppIcon Name="grid" CssClass="w-4 h-4" />
+                    </button>
+                    <button type="button"
+                            @onclick="() => SetViewMode(true)"
+                            class="p-1.5 rounded-lg transition-colors @(IsListView ? "bg-[#8B5CF6] text-white shadow-sm" : "text-[#94A3B8] hover:text-white")"
+                            title="List View"
+                            aria-label="List View">
+                        <AppIcon Name="list" CssClass="w-4 h-4" />
+                    </button>
+                </div>
+            }
+
+            @if (HasActiveFilters)
+            {
+                <button type="button"
+                        @onclick="ClearAllFilters"
+                        class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-colors"
+                        title="Reset all filters">
+                    <AppIcon Name="rotate-ccw" CssClass="w-3.5 h-3.5" />
+                    <span>Clear</span>
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- Bottom Row: Filter Dropdowns -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+        <!-- Genre Dropdown -->
+        <div>
+            <label class="block text-[11px] font-semibold uppercase tracking-wider text-[#94A3B8] mb-1">Genre</label>
+            <select value="@SelectedGenre" @onchange="HandleGenreChange"
+                    class="w-full px-3 py-2 rounded-xl bg-[#101625] border border-[#273247] text-sm text-white focus:outline-none focus:border-[#8B5CF6] transition-colors">
+                <option value="">All Genres</option>
+                <option value="Action">Action</option>
+                <option value="Adventure">Adventure</option>
+                <option value="RPG">RPG</option>
+                <option value="Strategy">Strategy</option>
+                <option value="Simulation">Simulation</option>
+                <option value="Racing">Racing</option>
+                <option value="Puzzle">Puzzle</option>
+                <option value="Indie">Indie</option>
+                <option value="Horror">Horror</option>
+            </select>
+        </div>
+
+        <!-- Platform Dropdown -->
+        <div>
+            <label class="block text-[11px] font-semibold uppercase tracking-wider text-[#94A3B8] mb-1">Platform</label>
+            <select value="@SelectedPlatform" @onchange="HandlePlatformChange"
+                    class="w-full px-3 py-2 rounded-xl bg-[#101625] border border-[#273247] text-sm text-white focus:outline-none focus:border-[#8B5CF6] transition-colors">
+                <option value="">All Platforms</option>
+                <option value="PC">PC</option>
+                <option value="PlayStation">PlayStation</option>
+                <option value="Xbox">Xbox</option>
+                <option value="Nintendo Switch">Nintendo Switch</option>
+            </select>
+        </div>
+
+        <!-- Sort Dropdown -->
+        <div>
+            <label class="block text-[11px] font-semibold uppercase tracking-wider text-[#94A3B8] mb-1">Sort By</label>
+            <select value="@SelectedSort" @onchange="HandleSortChange"
+                    class="w-full px-3 py-2 rounded-xl bg-[#101625] border border-[#273247] text-sm text-white focus:outline-none focus:border-[#8B5CF6] transition-colors">
+                <option value="az">Title A–Z</option>
+                <option value="za">Title Z–A</option>
+                <option value="rating_desc">Highest Rated</option>
+                <option value="rating_asc">Lowest Rated</option>
+                <option value="newest">Newest Release</option>
+                <option value="oldest">Oldest Release</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string SearchQuery { get; set; } = string.Empty;
+    [Parameter] public string SelectedGenre { get; set; } = string.Empty;
+    [Parameter] public string SelectedPlatform { get; set; } = string.Empty;
+    [Parameter] public string SelectedSort { get; set; } = "az";
+    [Parameter] public bool IsListView { get; set; } = false;
+    [Parameter] public bool ShowViewToggle { get; set; } = true;
+    [Parameter] public string SearchPlaceholder { get; set; } = "Search by title, genre, or developer...";
+
+    [Parameter] public EventCallback<string> SearchQueryChanged { get; set; }
+    [Parameter] public EventCallback<string> SelectedGenreChanged { get; set; }
+    [Parameter] public EventCallback<string> SelectedPlatformChanged { get; set; }
+    [Parameter] public EventCallback<string> SelectedSortChanged { get; set; }
+    [Parameter] public EventCallback<bool> IsListViewChanged { get; set; }
+    [Parameter] public EventCallback OnClearFilters { get; set; }
+
+    private bool HasActiveFilters => !string.IsNullOrWhiteSpace(SearchQuery) ||
+                                     !string.IsNullOrWhiteSpace(SelectedGenre) ||
+                                     !string.IsNullOrWhiteSpace(SelectedPlatform) ||
+                                     SelectedSort != "az";
+
+    private async Task HandleSearchInput(ChangeEventArgs e)
+    {
+        SearchQuery = e.Value?.ToString() ?? string.Empty;
+        await SearchQueryChanged.InvokeAsync(SearchQuery);
+    }
+
+    private async Task ClearSearch()
+    {
+        SearchQuery = string.Empty;
+        await SearchQueryChanged.InvokeAsync(SearchQuery);
+    }
+
+    private async Task HandleGenreChange(ChangeEventArgs e)
+    {
+        SelectedGenre = e.Value?.ToString() ?? string.Empty;
+        await SelectedGenreChanged.InvokeAsync(SelectedGenre);
+    }
+
+    private async Task HandlePlatformChange(ChangeEventArgs e)
+    {
+        SelectedPlatform = e.Value?.ToString() ?? string.Empty;
+        await SelectedPlatformChanged.InvokeAsync(SelectedPlatform);
+    }
+
+    private async Task HandleSortChange(ChangeEventArgs e)
+    {
+        SelectedSort = e.Value?.ToString() ?? "az";
+        await SelectedSortChanged.InvokeAsync(SelectedSort);
+    }
+
+    private async Task SetViewMode(bool listView)
+    {
+        IsListView = listView;
+        await IsListViewChanged.InvokeAsync(IsListView);
+    }
+
+    private async Task ClearAllFilters()
+    {
+        SearchQuery = string.Empty;
+        SelectedGenre = string.Empty;
+        SelectedPlatform = string.Empty;
+        SelectedSort = "az";
+
+        await SearchQueryChanged.InvokeAsync(SearchQuery);
+        await SelectedGenreChanged.InvokeAsync(SelectedGenre);
+        await SelectedPlatformChanged.InvokeAsync(SelectedPlatform);
+        await SelectedSortChanged.InvokeAsync(SelectedSort);
+
+        if (OnClearFilters.HasDelegate)
+        {
+            await OnClearFilters.InvokeAsync();
+        }
+    }
+}

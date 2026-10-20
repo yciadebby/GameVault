@@ -1,0 +1,338 @@
+@page "/library"
+@namespace GameVault.Pages
+@inject GameVaultState State
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<PageTitle>GameVault — My Library</PageTitle>
+
+<!-- Header -->
+<PageHeader Title="My Game Library"
+            Subtitle="All your games, organized in one place."
+            Badge="PERSONAL COLLECTION">
+    <Actions>
+        <button type="button"
+                @onclick="() => IsAddModalOpen = true"
+                class="px-5 py-2.5 rounded-xl bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-sm font-semibold shadow-lg shadow-[#8B5CF6]/30 transition-all flex items-center gap-2">
+            <AppIcon Name="plus" CssClass="w-4 h-4" />
+            <span>Add Game</span>
+        </button>
+    </Actions>
+</PageHeader>
+
+<!-- Library Statistics Summary -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+    <StatCard Title="Total Owned"
+              Value="@State.GetTotalLibraryCount().ToString()"
+              IconName="library"
+              Accent="violet"
+              Subtitle="In personal collection" />
+
+    <StatCard Title="In Progress"
+              Value="@State.GetPlayingCount().ToString()"
+              IconName="controller"
+              Accent="cyan"
+              Subtitle="Currently being played" />
+
+    <StatCard Title="Completed"
+              Value="@State.GetCompletedCount().ToString()"
+              IconName="trophy"
+              Accent="green"
+              Subtitle="100% finished" />
+</div>
+
+<!-- Status Tabs Navigation -->
+<div class="border-b border-[#273247] mb-6 overflow-x-auto scrollbar-none">
+    <div class="flex items-center gap-2 min-w-max pb-1">
+        @foreach (var tab in TabOptions)
+        {
+            var isCurrent = ActiveTab == tab.Key;
+            var count = GetTabCount(tab.Key);
+            <button type="button"
+                    @onclick="() => ActiveTab = tab.Key"
+                    class="relative px-4 py-2.5 text-sm font-semibold transition-all rounded-lg flex items-center gap-2 @(isCurrent ? "text-[#8B5CF6] bg-[#8B5CF6]/10" : "text-[#94A3B8] hover:text-white hover:bg-[#151B2D]")">
+                <span>@tab.Label</span>
+                <span class="text-xs px-2 py-0.5 rounded-full @(isCurrent ? "bg-[#8B5CF6] text-white" : "bg-[#1D263A] text-[#94A3B8]")">
+                    @count
+                </span>
+                @if (isCurrent)
+                {
+                    <span class="absolute bottom-0 inset-x-2 h-0.5 bg-[#8B5CF6] rounded-full"></span>
+                }
+            </button>
+        }
+    </div>
+</div>
+
+<!-- Library Toolbar -->
+<div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-4 rounded-2xl bg-[#151B2D] border border-[#273247] mb-6">
+    <!-- Search within library -->
+    <div class="relative flex-1 max-w-md">
+        <AppIcon Name="search" CssClass="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94A3B8]" />
+        <input type="text"
+               @bind="LibrarySearch"
+               @bind:event="oninput"
+               placeholder="Filter your collection by title or genre..."
+               class="w-full pl-10 pr-4 py-2 rounded-xl bg-[#101625] border border-[#273247] text-sm text-white placeholder-[#94A3B8] focus:outline-none focus:border-[#8B5CF6] transition-colors" />
+    </div>
+
+    <!-- Sorting & View Mode -->
+    <div class="flex items-center gap-3 justify-end">
+        <div class="flex items-center gap-2">
+            <span class="text-xs text-[#94A3B8] font-medium hidden sm:inline">Sort:</span>
+            <select @bind="SortOrder" class="px-3 py-2 rounded-xl bg-[#101625] border border-[#273247] text-xs font-semibold text-white focus:outline-none focus:border-[#8B5CF6]">
+                <option value="recent">Recently Added</option>
+                <option value="name">Game Title A–Z</option>
+                <option value="progress_desc">Highest Progress</option>
+                <option value="progress_asc">Lowest Progress</option>
+            </select>
+        </div>
+
+        <div class="flex items-center bg-[#101625] border border-[#273247] rounded-xl p-1">
+            <button type="button"
+                    @onclick="() => IsListView = false"
+                    class="p-1.5 rounded-lg transition-colors @(!IsListView ? "bg-[#8B5CF6] text-white shadow-sm" : "text-[#94A3B8] hover:text-white")"
+                    title="Grid View">
+                <AppIcon Name="grid" CssClass="w-4 h-4" />
+            </button>
+            <button type="button"
+                    @onclick="() => IsListView = true"
+                    class="p-1.5 rounded-lg transition-colors @(IsListView ? "bg-[#8B5CF6] text-white shadow-sm" : "text-[#94A3B8] hover:text-white")"
+                    title="List View">
+                <AppIcon Name="list" CssClass="w-4 h-4" />
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Library Game Collection -->
+@{
+    var displayedItems = FilteredLibraryGames;
+}
+@if (displayedItems.Count > 0)
+{
+    @if (IsListView)
+    {
+        <div class="space-y-3">
+            @foreach (var (game, entry) in displayedItems)
+            {
+                <GameRow @key="game.Id" Game="@game" Entry="@entry" OnEdit="OpenEditModal" />
+            }
+        </div>
+    }
+    else
+    {
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            @foreach (var (game, entry) in displayedItems)
+            {
+                <GameCard @key="game.Id" Game="@game" Entry="@entry" OnEdit="OpenEditModal" />
+            }
+        </div>
+    }
+}
+else
+{
+    <EmptyState IconName="library"
+                Title="No games in this section"
+                Description="You don't have any games matching the current status tab and filter."
+                ActionText="Add a Game"
+                ActionIcon="plus"
+                OnAction="() => IsAddModalOpen = true" />
+}
+
+<!-- Add Game Modal -->
+<Modal IsOpen="@IsAddModalOpen" Title="Add Game to Library" OnClose="() => IsAddModalOpen = false" Size="lg">
+    <ChildContent>
+        <div class="space-y-4">
+            <!-- Modal search bar -->
+            <div class="relative">
+                <AppIcon Name="search" CssClass="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94A3B8]" />
+                <input type="text"
+                       @bind="AddModalSearch"
+                       @bind:event="oninput"
+                       placeholder="Search catalog games to add..."
+                       class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#101625] border border-[#273247] text-sm text-white placeholder-[#94A3B8] focus:outline-none focus:border-[#8B5CF6] transition-colors" />
+            </div>
+
+            <!-- Scrollable list of available catalog games -->
+            <div class="divide-y divide-[#273247]/50 max-h-[50vh] overflow-y-auto pr-1">
+                @foreach (var catalogGame in FilteredCatalogForAdd)
+                {
+                    var isOwned = State.IsInLibrary(catalogGame.Id);
+                    <div class="flex items-center justify-between gap-4 py-3 hover:bg-[#1D263A]/40 px-2 rounded-xl transition-colors">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <GameArt Game="@catalogGame" Variant="sm" CssClass="w-12 h-16 rounded-lg" />
+                            <div class="min-w-0">
+                                <h4 class="text-sm font-bold font-heading text-white truncate">@catalogGame.Title</h4>
+                                <div class="flex items-center gap-2 text-xs text-[#94A3B8] mt-0.5">
+                                    <span>@catalogGame.PrimaryGenre</span>
+                                    <span>•</span>
+                                    <span>@catalogGame.ReleaseDate.Year</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex-shrink-0">
+                            @if (isOwned)
+                            {
+                                <span class="px-3 py-1.5 rounded-xl bg-[#22C55E]/15 text-[#22C55E] border border-[#22C55E]/30 text-xs font-semibold">
+                                    Owned
+                                </span>
+                            }
+                            else
+                            {
+                                <button type="button"
+                                        @onclick="() => AddGameToLibrary(catalogGame.Id)"
+                                        class="px-4 py-1.5 rounded-xl bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-xs font-semibold shadow-md shadow-[#8B5CF6]/25 transition-all flex items-center gap-1.5">
+                                    <AppIcon Name="plus" CssClass="w-3.5 h-3.5" />
+                                    <span>Add</span>
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </ChildContent>
+    <FooterContent>
+        <button type="button" @onclick="() => IsAddModalOpen = false" class="px-5 py-2 rounded-xl bg-[#1D263A] text-white text-xs font-semibold hover:bg-[#273247] transition-colors">
+            Done
+        </button>
+    </FooterContent>
+</Modal>
+
+<!-- Edit Game Modal -->
+@if (SelectedGameForEdit != null)
+{
+    <EditGameModal IsOpen="@IsEditModalOpen"
+                   Game="@SelectedGameForEdit"
+                   OnClose="() => IsEditModalOpen = false"
+                   OnSaved="() => { IsEditModalOpen = false; StateHasChanged(); }" />
+}
+
+@code {
+    private string ActiveTab { get; set; } = "all";
+    private string LibrarySearch { get; set; } = string.Empty;
+    private string SortOrder { get; set; } = "recent";
+    private bool IsListView { get; set; } = false;
+
+    private bool IsAddModalOpen { get; set; }
+    private string AddModalSearch { get; set; } = string.Empty;
+
+    private bool IsEditModalOpen { get; set; }
+    private Game? SelectedGameForEdit { get; set; }
+
+    private class TabItem
+    {
+        public string Key { get; set; } = string.Empty;
+        public string Label { get; set; } = string.Empty;
+    }
+
+    private readonly List<TabItem> TabOptions = new()
+    {
+        new() { Key = "all", Label = "All Games" },
+        new() { Key = "playing", Label = "Playing" },
+        new() { Key = "completed", Label = "Completed" },
+        new() { Key = "backlog", Label = "Backlog" },
+        new() { Key = "onhold", Label = "On Hold" },
+        new() { Key = "dropped", Label = "Dropped" }
+    };
+
+    protected override void OnInitialized()
+    {
+        State.OnChange += HandleStateChanged;
+    }
+
+    private void HandleStateChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        State.OnChange -= HandleStateChanged;
+    }
+
+    private int GetTabCount(string key) => key switch
+    {
+        "playing" => State.GetLibraryEntries().Count(e => e.Status == GameStatus.Playing),
+        "completed" => State.GetLibraryEntries().Count(e => e.Status == GameStatus.Completed),
+        "backlog" => State.GetLibraryEntries().Count(e => e.Status == GameStatus.Backlog),
+        "onhold" => State.GetLibraryEntries().Count(e => e.Status == GameStatus.OnHold),
+        "dropped" => State.GetLibraryEntries().Count(e => e.Status == GameStatus.Dropped),
+        _ => State.GetTotalLibraryCount()
+    };
+
+    private List<(Game Game, LibraryEntry Entry)> FilteredLibraryGames
+    {
+        get
+        {
+            var items = State.GetLibraryGames().AsEnumerable();
+
+            // Filter by Status Tab
+            if (ActiveTab != "all")
+            {
+                var targetStatus = ActiveTab switch
+                {
+                    "playing" => GameStatus.Playing,
+                    "completed" => GameStatus.Completed,
+                    "backlog" => GameStatus.Backlog,
+                    "onhold" => GameStatus.OnHold,
+                    "dropped" => GameStatus.Dropped,
+                    _ => (GameStatus?)null
+                };
+
+                if (targetStatus.HasValue)
+                {
+                    items = items.Where(x => x.Entry.Status == targetStatus.Value);
+                }
+            }
+
+            // Filter by Library Search
+            if (!string.IsNullOrWhiteSpace(LibrarySearch))
+            {
+                var term = LibrarySearch.Trim();
+                items = items.Where(x =>
+                    x.Game.Title.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    x.Game.PrimaryGenre.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    x.Entry.PersonalNotes.Contains(term, StringComparison.OrdinalIgnoreCase));
+            }
+
+            // Sorting
+            items = SortOrder switch
+            {
+                "name" => items.OrderBy(x => x.Game.Title),
+                "progress_desc" => items.OrderByDescending(x => x.Entry.ProgressPercentage),
+                "progress_asc" => items.OrderBy(x => x.Entry.ProgressPercentage),
+                _ => items.OrderByDescending(x => x.Entry.DateAdded)
+            };
+
+            return items.ToList();
+        }
+    }
+
+    private IEnumerable<Game> FilteredCatalogForAdd
+    {
+        get
+        {
+            var catalog = State.GetAllGames();
+            if (string.IsNullOrWhiteSpace(AddModalSearch))
+            {
+                return catalog;
+            }
+
+            var term = AddModalSearch.Trim();
+            return catalog.Where(g =>
+                g.Title.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                g.PrimaryGenre.Contains(term, StringComparison.OrdinalIgnoreCase));
+        }
+    }
+
+    private void AddGameToLibrary(string gameId)
+    {
+        State.AddToLibrary(gameId);
+    }
+
+    private void OpenEditModal(Game game)
+    {
+        SelectedGameForEdit = game;
+        IsEditModalOpen = true;
+    }
+}

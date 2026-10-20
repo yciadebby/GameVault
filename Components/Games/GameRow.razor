@@ -1,0 +1,103 @@
+@namespace GameVault.Components.Games
+@using GameVault.Models
+@inject NavigationManager Navigation
+@inject GameVaultState State
+
+<div class="group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-2xl bg-[#151B2D] border border-[#273247] hover:border-[#8B5CF6]/60 hover:bg-[#182035] transition-all duration-150 @CssClass">
+    <!-- Left: Artwork & Title Details -->
+    <div class="flex items-center gap-4 min-w-0 flex-1">
+        <div class="cursor-pointer" @onclick="NavigateToDetails">
+            <GameArt Game="@Game" Variant="sm" />
+        </div>
+        
+        <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2 flex-wrap mb-1">
+                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#1D263A] text-[#94A3B8] border border-[#273247]">
+                    @Game.PrimaryGenre
+                </span>
+                <span class="text-xs text-[#94A3B8]">@Game.ReleaseDate.Year</span>
+                @if (Entry != null)
+                {
+                    <StatusBadge Status="@Entry.Status" />
+                }
+            </div>
+
+            <h4 class="text-base font-bold font-heading text-white truncate group-hover:text-[#8B5CF6] transition-colors cursor-pointer" @onclick="NavigateToDetails">
+                @Game.Title
+            </h4>
+
+            <p class="text-xs text-[#94A3B8] line-clamp-1 mt-0.5 max-w-xl">
+                @Game.ShortDescription
+            </p>
+        </div>
+    </div>
+
+    <!-- Center/Right: Progress or Platform/Rating -->
+    <div class="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-3 sm:pt-0 border-[#273247]">
+        @if (Entry != null)
+        {
+            <div class="w-32 hidden md:block">
+                <div class="flex items-center justify-between text-xs mb-1">
+                    <span class="text-[#94A3B8]">Progress</span>
+                    <span class="text-white font-semibold">@Entry.ProgressPercentage%</span>
+                </div>
+                <ProgressBar Percentage="@Entry.ProgressPercentage" Size="sm" />
+            </div>
+        }
+        else
+        {
+            <div class="flex items-center gap-1.5 text-xs font-semibold text-white">
+                <AppIcon Name="star" CssClass="w-4 h-4 text-[#F59E0B]" Fill="true" />
+                <span>@Game.Rating.ToString("F1")</span>
+            </div>
+        }
+
+        <!-- Actions -->
+        <div class="flex items-center gap-2">
+            <!-- Wishlist Heart -->
+            <button type="button"
+                    @onclick="HandleWishlistClick"
+                    class="p-2 rounded-xl bg-[#1D263A] hover:bg-[#273247] transition-colors @(IsWishlisted ? "text-[#EF4444]" : "text-[#94A3B8] hover:text-white")"
+                    title="@(IsWishlisted ? "Remove from wishlist" : "Add to wishlist")">
+                <AppIcon Name="heart" CssClass="w-4 h-4" Fill="@IsWishlisted" />
+            </button>
+
+            @if (Entry != null && OnEdit.HasDelegate)
+            {
+                <button type="button"
+                        @onclick="HandleEditClick"
+                        class="p-2 rounded-xl bg-[#1D263A] hover:bg-[#273247] text-[#94A3B8] hover:text-white transition-colors"
+                        title="Edit Entry">
+                    <AppIcon Name="edit" CssClass="w-4 h-4" />
+                </button>
+            }
+
+            <button type="button"
+                    @onclick="NavigateToDetails"
+                    class="px-3.5 py-2 rounded-xl bg-[#1D263A] hover:bg-[#8B5CF6] text-white text-xs font-semibold transition-all border border-[#273247] hover:border-[#8B5CF6]">
+                Details
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Game Game { get; set; } = null!;
+    [Parameter] public LibraryEntry? Entry { get; set; }
+    [Parameter] public string CssClass { get; set; } = string.Empty;
+    [Parameter] public EventCallback<Game> OnEdit { get; set; }
+
+    private bool IsWishlisted => State.IsWishlisted(Game.Id);
+
+    private void NavigateToDetails() => Navigation.NavigateTo($"/games/{Game.Id}");
+
+    private void HandleWishlistClick() => State.ToggleWishlist(Game.Id);
+
+    private async Task HandleEditClick()
+    {
+        if (OnEdit.HasDelegate)
+        {
+            await OnEdit.InvokeAsync(Game);
+        }
+    }
+}

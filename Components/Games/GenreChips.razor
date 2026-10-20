@@ -1,0 +1,39 @@
+@namespace GameVault.Components.Games
+
+<div class="flex flex-wrap items-center gap-1.5 @CssClass">
+    @foreach (var genre in Genres)
+    {
+        var isSelected = !string.IsNullOrWhiteSpace(SelectedGenre) && string.Equals(genre, SelectedGenre, StringComparison.OrdinalIgnoreCase);
+
+        if (Clickable)
+        {
+            <button type="button"
+                    @onclick="() => HandleClick(genre)"
+                    class="px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer @(isSelected ? "bg-[#8B5CF6] text-white shadow-md shadow-[#8B5CF6]/30 border border-[#8B5CF6]" : "bg-[#1D263A] text-[#94A3B8] hover:text-white hover:bg-[#273247] border border-[#273247]")">
+                @genre
+            </button>
+        }
+        else
+        {
+            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#1D263A] text-[#94A3B8] border border-[#273247]">
+                @genre
+            </span>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public IEnumerable<string> Genres { get; set; } = Enumerable.Empty<string>();
+    [Parameter] public string? SelectedGenre { get; set; }
+    [Parameter] public bool Clickable { get; set; } = false;
+    [Parameter] public string CssClass { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> OnGenreSelected { get; set; }
+
+    private async Task HandleClick(string genre)
+    {
+        if (OnGenreSelected.HasDelegate)
+        {
+            await OnGenreSelected.InvokeAsync(genre);
+        }
+    }
+}

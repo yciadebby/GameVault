@@ -1,0 +1,49 @@
+@namespace GameVault.Components.Games
+
+<div class="inline-flex items-center gap-1 @CssClass">
+    @for (int i = 1; i <= 5; i++)
+    {
+        var starIndex = i;
+        var isFilled = starIndex <= Math.Round(Rating);
+        
+        <button type="button"
+                disabled="@(!IsEditable)"
+                @onclick="() => HandleStarClick(starIndex)"
+                class="transition-transform @(IsEditable ? "cursor-pointer hover:scale-125 focus:outline-none" : "cursor-default")"
+                title="@(IsEditable ? $"Rate {starIndex} star{(starIndex > 1 ? "s" : "")}" : $"{Rating:F1} / 5")">
+            <svg class="@GetStarSizeClass() @(isFilled ? "text-[#F59E0B] fill-[#F59E0B]" : "text-[#273247] fill-transparent") transition-colors"
+                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
+        </button>
+    }
+
+    @if (ShowValueText)
+    {
+        <span class="text-xs font-bold text-[#F8FAFC] ml-1">@Rating.ToString("F1")</span>
+    }
+</div>
+
+@code {
+    [Parameter] public double Rating { get; set; }
+    [Parameter] public bool IsEditable { get; set; } = false;
+    [Parameter] public bool ShowValueText { get; set; } = false;
+    [Parameter] public string Size { get; set; } = "md"; // "sm", "md", "lg"
+    [Parameter] public string CssClass { get; set; } = string.Empty;
+    [Parameter] public EventCallback<int> OnRatingChanged { get; set; }
+
+    private async Task HandleStarClick(int value)
+    {
+        if (IsEditable && OnRatingChanged.HasDelegate)
+        {
+            await OnRatingChanged.InvokeAsync(value);
+        }
+    }
+
+    private string GetStarSizeClass() => Size switch
+    {
+        "sm" => "w-3.5 h-3.5",
+        "lg" => "w-6 h-6",
+        _ => "w-4 h-4"
+    };
+}

@@ -1,0 +1,373 @@
+@page "/profile"
+@namespace GameVault.Pages
+@using GameVault.Models
+@inject GameVaultState State
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<PageTitle>GameVault — Gamer Profile</PageTitle>
+
+<!-- Profile Banner Area -->
+<div class="relative rounded-3xl overflow-hidden bg-[#151B2D] border border-[#273247] shadow-xl mb-8">
+    <!-- Top Decorative Banner -->
+    <div class="h-44 sm:h-52 w-full bg-gradient-to-r from-[#1E112A] via-[#1E1B4B] to-[#0E3A52] relative overflow-hidden">
+        <div class="absolute -top-12 -right-12 w-64 h-64 rounded-full bg-[#8B5CF6]/30 blur-2xl"></div>
+        <div class="absolute -bottom-12 left-1/4 w-64 h-64 rounded-full bg-[#22D3EE]/20 blur-2xl"></div>
+        <div class="absolute inset-0 bg-[radial-gradient(#8B5CF6_1px,transparent_1px)] [background-size:20px_20px] opacity-20"></div>
+    </div>
+
+    <!-- Avatar & Profile Info Bar -->
+    <div class="px-6 sm:px-8 pb-6 pt-0 relative flex flex-col sm:flex-row items-center sm:items-end justify-between gap-4 -mt-16 sm:-mt-20">
+        <div class="flex flex-col sm:flex-row items-center sm:items-end gap-5 text-center sm:text-left">
+            <!-- Large Avatar -->
+            <div class="relative w-28 h-28 sm:w-32 sm:h-32 rounded-3xl p-1 bg-[#101625] border-2 border-[#8B5CF6] shadow-2xl flex-shrink-0">
+                <div class="w-full h-full rounded-[22px] bg-gradient-to-tr from-[#8B5CF6] to-[#22D3EE] flex items-center justify-center font-heading font-black text-3xl sm:text-4xl text-white shadow-inner">
+                    @State.Profile.AvatarInitials
+                </div>
+            </div>
+
+            <!-- Profile Identifiers -->
+            <div>
+                <div class="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+                    <h1 class="text-2xl sm:text-3xl font-extrabold font-heading text-white">@State.Profile.DisplayName</h1>
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-[#8B5CF6]/20 text-[#8B5CF6] border border-[#8B5CF6]/40">
+                        @State.Profile.GamerLabel
+                    </span>
+                </div>
+                <p class="text-xs sm:text-sm text-[#94A3B8] font-medium mt-0.5">@@@State.Profile.Username</p>
+                <p class="text-xs sm:text-sm text-slate-300 mt-2 max-w-lg leading-relaxed">
+                    @State.Profile.Bio
+                </p>
+            </div>
+        </div>
+
+        <!-- Edit Profile Button -->
+        <button type="button"
+                @onclick="OpenEditProfileModal"
+                class="px-5 py-2.5 rounded-xl bg-[#1D263A] hover:bg-[#8B5CF6] text-white text-xs font-semibold border border-[#273247] hover:border-[#8B5CF6] transition-all flex items-center gap-2 shadow-sm">
+            <AppIcon Name="edit" CssClass="w-4 h-4" />
+            <span>Edit Profile</span>
+        </button>
+    </div>
+</div>
+
+<!-- Profile Statistics -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-10">
+    <StatCard Title="Total Games"
+              Value="@State.GetTotalLibraryCount().ToString()"
+              IconName="library"
+              Accent="violet"
+              Subtitle="In Vault" />
+
+    <StatCard Title="Completed Games"
+              Value="@State.GetCompletedCount().ToString()"
+              IconName="trophy"
+              Accent="green"
+              Subtitle="Finished 100%" />
+
+    <StatCard Title="Currently Playing"
+              Value="@State.GetPlayingCount().ToString()"
+              IconName="controller"
+              Accent="cyan"
+              Subtitle="Active Runs" />
+
+    <StatCard Title="Wishlist Games"
+              Value="@State.GetWishlistCount().ToString()"
+              IconName="heart"
+              Accent="amber"
+              Subtitle="Planned Next" />
+</div>
+
+<!-- Two-Column Layout: Left (Achievements & Genres), Right (Activity Timeline) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-10">
+    <!-- Left Column (7 cols) -->
+    <div class="lg:col-span-7 space-y-8">
+        <!-- Favorite Genres -->
+        <div class="p-6 rounded-2xl bg-[#151B2D] border border-[#273247]">
+            <h3 class="text-lg font-bold font-heading text-white mb-2 flex items-center gap-2">
+                <AppIcon Name="sparkles" CssClass="w-4 h-4 text-[#8B5CF6]" />
+                <span>Favorite Genres & Preferences</span>
+            </h3>
+            <p class="text-xs text-[#94A3B8] mb-4">
+                Your preferred primary genre is <span class="text-white font-bold">@State.Profile.FavoriteGenre</span>, which powers your dashboard recommendations.
+            </p>
+
+            <div class="space-y-3">
+                @foreach (var genreStat in GenreDistribution)
+                {
+                    <div>
+                        <div class="flex items-center justify-between text-xs mb-1">
+                            <span class="font-semibold text-white">@genreStat.Genre</span>
+                            <span class="text-[#94A3B8]">@genreStat.Count games (@genreStat.Percentage%)</span>
+                        </div>
+                        <div class="w-full bg-[#101625] h-2 rounded-full overflow-hidden border border-[#273247]/50">
+                            <div class="h-full bg-gradient-to-r from-[#8B5CF6] to-[#22D3EE] rounded-full" style="width: @(genreStat.Percentage)%"></div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Achievement Badges -->
+        <div class="p-6 rounded-2xl bg-[#151B2D] border border-[#273247]">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold font-heading text-white flex items-center gap-2">
+                    <AppIcon Name="trophy" CssClass="w-4 h-4 text-amber-400" />
+                    <span>Achievement Badges</span>
+                </h3>
+                <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#1D263A] text-[#94A3B8]">
+                    @Achievements.Count(a => a.IsUnlocked) of @Achievements.Count Unlocked
+                </span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                @foreach (var ach in Achievements)
+                {
+                    <div class="p-4 rounded-xl border transition-all flex items-start gap-3.5 @(ach.IsUnlocked ? "bg-[#101625] border-[#8B5CF6]/40 shadow-sm" : "bg-[#101625]/40 border-[#273247] opacity-50")">
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 @(ach.IsUnlocked ? "bg-[#8B5CF6]/20 text-[#8B5CF6] border border-[#8B5CF6]/40" : "bg-[#151B2D] text-[#94A3B8] border border-[#273247]")">
+                            <AppIcon Name="@ach.IconName" CssClass="w-5 h-5" />
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center justify-between">
+                                <h4 class="text-sm font-bold text-white truncate">@ach.Title</h4>
+                                @if (ach.IsUnlocked)
+                                {
+                                    <span class="text-[10px] font-bold text-[#22C55E] uppercase tracking-wider">Unlocked</span>
+                                }
+                                else
+                                {
+                                    <span class="text-[10px] text-[#94A3B8] uppercase tracking-wider">Locked</span>
+                                }
+                            </div>
+                            <p class="text-xs text-[#94A3B8] mt-1 leading-snug">@ach.Description</p>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column (5 cols): Activity Timeline -->
+    <div class="lg:col-span-5">
+        <div class="p-6 rounded-2xl bg-[#151B2D] border border-[#273247] h-full">
+            <h3 class="text-lg font-bold font-heading text-white mb-4 flex items-center gap-2">
+                <AppIcon Name="compass" CssClass="w-4 h-4 text-[#22D3EE]" />
+                <span>Recent Activity Timeline</span>
+            </h3>
+
+            @{
+                var activities = State.GetRecentActivities(8);
+            }
+            @if (activities.Count > 0)
+            {
+                <div class="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-[#273247]">
+                    @foreach (var act in activities)
+                    {
+                        <div class="relative group">
+                            <!-- Bullet node -->
+                            <div class="absolute -left-[27px] top-1 w-3.5 h-3.5 rounded-full bg-[#151B2D] border-2 border-[#8B5CF6] shadow-sm"></div>
+                            <div class="p-3 rounded-xl bg-[#101625] border border-[#273247]/60 hover:border-[#8B5CF6]/40 transition-colors">
+                                <p class="text-xs font-semibold text-white">@act.Description</p>
+                                <span class="text-[10px] text-[#94A3B8] mt-1 block">
+                                    @act.Timestamp.ToString("MMM d, yyyy • h:mm tt")
+                                </span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="text-xs text-[#94A3B8]">No activities logged yet.</p>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Edit Profile Modal -->
+<Modal IsOpen="@IsEditModalOpen" Title="Edit Profile" OnClose="() => IsEditModalOpen = false" Size="md">
+    <ChildContent>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-[#94A3B8] mb-1">Display Name</label>
+                <input type="text" @bind="EditDisplayName" class="w-full px-3.5 py-2.5 rounded-xl bg-[#101625] border border-[#273247] text-sm text-white focus:outline-none focus:border-[#8B5CF6]" />
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-[#94A3B8] mb-1">Username</label>
+                <div class="relative">
+                    <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-[#94A3B8]">@@</span>
+                    <input type="text" @bind="EditUsername" class="w-full pl-8 pr-4 py-2.5 rounded-xl bg-[#101625] border border-[#273247] text-sm text-white focus:outline-none focus:border-[#8B5CF6]" />
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-[#94A3B8] mb-1">Avatar Initials</label>
+                <input type="text" maxlength="2" @bind="EditAvatarInitials" class="w-24 px-3.5 py-2.5 rounded-xl bg-[#101625] border border-[#273247] text-sm text-white uppercase text-center font-bold focus:outline-none focus:border-[#8B5CF6]" />
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-[#94A3B8] mb-1">Favorite Primary Genre</label>
+                <select @bind="EditFavoriteGenre" class="w-full px-3.5 py-2.5 rounded-xl bg-[#101625] border border-[#273247] text-sm text-white focus:outline-none focus:border-[#8B5CF6]">
+                    <option value="Action">Action</option>
+                    <option value="Adventure">Adventure</option>
+                    <option value="RPG">RPG</option>
+                    <option value="Action RPG">Action RPG</option>
+                    <option value="Strategy">Strategy</option>
+                    <option value="Simulation">Simulation</option>
+                    <option value="Racing">Racing</option>
+                    <option value="Puzzle">Puzzle</option>
+                    <option value="Indie">Indie</option>
+                    <option value="Horror">Horror</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-[#94A3B8] mb-1">Gamer Title / Badge</label>
+                <input type="text" @bind="EditGamerLabel" class="w-full px-3.5 py-2.5 rounded-xl bg-[#101625] border border-[#273247] text-sm text-white focus:outline-none focus:border-[#8B5CF6]" />
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-[#94A3B8] mb-1">Bio</label>
+                <textarea rows="3" @bind="EditBio" class="w-full px-3.5 py-2.5 rounded-xl bg-[#101625] border border-[#273247] text-sm text-white focus:outline-none focus:border-[#8B5CF6] resize-none"></textarea>
+            </div>
+        </div>
+    </ChildContent>
+    <FooterContent>
+        <button type="button" @onclick="() => IsEditModalOpen = false" class="px-4 py-2 rounded-xl text-xs font-semibold bg-[#1D263A] text-[#94A3B8] hover:text-white transition-colors">
+            Cancel
+        </button>
+        <button type="button" @onclick="SaveProfile" class="px-5 py-2 rounded-xl text-xs font-semibold bg-[#8B5CF6] hover:bg-[#7C3AED] text-white shadow-md shadow-[#8B5CF6]/30 transition-all">
+            Save Profile
+        </button>
+    </FooterContent>
+</Modal>
+
+@code {
+    private bool IsEditModalOpen { get; set; }
+    private string EditDisplayName { get; set; } = string.Empty;
+    private string EditUsername { get; set; } = string.Empty;
+    private string EditBio { get; set; } = string.Empty;
+    private string EditFavoriteGenre { get; set; } = string.Empty;
+    private string EditGamerLabel { get; set; } = string.Empty;
+    private string EditAvatarInitials { get; set; } = string.Empty;
+
+    private class GenreStat
+    {
+        public string Genre { get; set; } = string.Empty;
+        public int Count { get; set; }
+        public int Percentage { get; set; }
+    }
+
+    private class AchievementItem
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string IconName { get; set; } = "trophy";
+        public bool IsUnlocked { get; set; }
+    }
+
+    protected override void OnInitialized()
+    {
+        State.OnChange += HandleStateChanged;
+    }
+
+    private void HandleStateChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        State.OnChange -= HandleStateChanged;
+    }
+
+    private List<GenreStat> GenreDistribution
+    {
+        get
+        {
+            var libraryGames = State.GetLibraryGames().Select(x => x.Game).ToList();
+            var total = libraryGames.Count;
+            if (total == 0) return new();
+
+            return libraryGames
+                .GroupBy(g => g.PrimaryGenre)
+                .Select(grp => new GenreStat
+                {
+                    Genre = grp.Key,
+                    Count = grp.Count(),
+                    Percentage = (int)Math.Round((double)grp.Count() / total * 100)
+                })
+                .OrderByDescending(x => x.Count)
+                .Take(5)
+                .ToList();
+        }
+    }
+
+    private List<AchievementItem> Achievements
+    {
+        get
+        {
+            var totalOwned = State.GetTotalLibraryCount();
+            var completedCount = State.GetCompletedCount();
+            var distinctGenres = State.GetLibraryGames().Select(x => x.Game.PrimaryGenre).Distinct().Count();
+
+            return new List<AchievementItem>
+            {
+                new AchievementItem
+                {
+                    Title = "First Adventure",
+                    Description = "Added the first game to your personal library.",
+                    IconName = "compass",
+                    IsUnlocked = totalOwned >= 1
+                },
+                new AchievementItem
+                {
+                    Title = "Game Collector",
+                    Description = "Collected at least 10 games in your library.",
+                    IconName = "library",
+                    IsUnlocked = totalOwned >= 10
+                },
+                new AchievementItem
+                {
+                    Title = "Completionist",
+                    Description = "Conquered and completed at least 3 games 100%.",
+                    IconName = "trophy",
+                    IsUnlocked = completedCount >= 3
+                },
+                new AchievementItem
+                {
+                    Title = "Genre Explorer",
+                    Description = "Own games spanning at least 5 distinct genres.",
+                    IconName = "sparkles",
+                    IsUnlocked = distinctGenres >= 5
+                }
+            };
+        }
+    }
+
+    private void OpenEditProfileModal()
+    {
+        EditDisplayName = State.Profile.DisplayName;
+        EditUsername = State.Profile.Username;
+        EditBio = State.Profile.Bio;
+        EditFavoriteGenre = State.Profile.FavoriteGenre;
+        EditGamerLabel = State.Profile.GamerLabel;
+        EditAvatarInitials = State.Profile.AvatarInitials;
+        IsEditModalOpen = true;
+    }
+
+    private async Task SaveProfile()
+    {
+        var updated = new UserProfile
+        {
+            DisplayName = string.IsNullOrWhiteSpace(EditDisplayName) ? "PlayerOne" : EditDisplayName.Trim(),
+            Username = string.IsNullOrWhiteSpace(EditUsername) ? "playerone" : EditUsername.Trim(),
+            Bio = EditBio.Trim(),
+            FavoriteGenre = EditFavoriteGenre,
+            GamerLabel = string.IsNullOrWhiteSpace(EditGamerLabel) ? "Game Explorer" : EditGamerLabel.Trim(),
+            AvatarInitials = string.IsNullOrWhiteSpace(EditAvatarInitials) ? "PO" : EditAvatarInitials.Trim().ToUpperInvariant(),
+            AvatarColor = State.Profile.AvatarColor
+        };
+
+        await State.UpdateProfileAsync(updated);
+        IsEditModalOpen = false;
+    }
+}

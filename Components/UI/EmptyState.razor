@@ -1,0 +1,44 @@
+@namespace GameVault.Components.UI
+
+<div class="flex flex-col items-center justify-center text-center p-8 sm:p-12 rounded-2xl bg-[#151B2D]/50 border border-dashed border-[#273247] my-6">
+    <div class="w-16 h-16 rounded-2xl bg-[#1D263A] border border-[#273247] flex items-center justify-center text-[#8B5CF6] mb-4 shadow-inner">
+        <AppIcon Name="@IconName" CssClass="w-8 h-8" />
+    </div>
+    <h3 class="text-xl font-bold font-heading text-white">@Title</h3>
+    <p class="text-sm text-[#94A3B8] max-w-sm mt-1.5 leading-relaxed">@Description</p>
+    
+    @if (!string.IsNullOrWhiteSpace(ActionText))
+    {
+        <button type="button" @onclick="HandleActionClick" class="mt-5 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-sm font-semibold transition-all shadow-lg shadow-[#8B5CF6]/25">
+            @if (!string.IsNullOrWhiteSpace(ActionIcon))
+            {
+                <AppIcon Name="@ActionIcon" CssClass="w-4 h-4" />
+            }
+            @ActionText
+        </button>
+    }
+    else if (ActionContent != null)
+    {
+        <div class="mt-5">
+            @ActionContent
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string IconName { get; set; } = "compass";
+    [Parameter] public string Title { get; set; } = "No items found";
+    [Parameter] public string Description { get; set; } = "There are no entries to display right now.";
+    [Parameter] public string? ActionText { get; set; }
+    [Parameter] public string? ActionIcon { get; set; }
+    [Parameter] public EventCallback OnAction { get; set; }
+    [Parameter] public RenderFragment? ActionContent { get; set; }
+
+    private async Task HandleActionClick()
+    {
+        if (OnAction.HasDelegate)
+        {
+            await OnAction.InvokeAsync();
+        }
+    }
+}
